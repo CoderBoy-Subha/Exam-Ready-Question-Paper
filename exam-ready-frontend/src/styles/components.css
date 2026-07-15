@@ -1,0 +1,125 @@
+/* Shared styles for small components that don't need their own CSS module:
+   StepIndicator, DifficultySelector, ConsentNotice. */
+
+/* StepIndicator */
+.stepList {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.stepItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+
+.stepDrop {
+  width: 9px;
+  height: 9px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(45deg);
+  background: rgba(15, 76, 92, 0.18);
+  transition: background 0.4s ease, transform 0.4s ease;
+}
+
+.stepItemActive .stepDrop,
+.stepItemDone .stepDrop {
+  background: var(--tide);
+}
+
+.stepItemActive .stepDrop {
+  transform: rotate(45deg) scale(1.25);
+}
+
+.stepLabel {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .stepLabel {
+    display: inline;
+  }
+}
+
+/* DifficultySelector */
+.difficultyGroup {
+  display: inline-flex;
+  padding: 4px;
+  gap: 4px;
+  background: rgba(15, 76, 92, 0.06);
+  border-radius: 999px;
+}
+
+.difficultyOption {
+  border: none;
+  background: transparent;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.difficultyOption:hover {
+  color: var(--current);
+}
+
+.difficultyOptionActive {
+  background: var(--tide);
+  color: white;
+  box-shadow: 0 6px 16px -6px rgba(27, 122, 140, 0.6);
+}
+
+/* ConsentNotice */
+.consentNotice {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 560px;
+  width: calc(100% - 32px);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  background: var(--foam-strong);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 20;
+  box-shadow: var(--shadow-glass);
+}
+
+.consentDismiss {
+  border: none;
+  background: rgba(15, 76, 92, 0.08);
+  color: var(--current);
+  border-radius: 999px;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+
+@media (max-width: 480px) {
+  .consentNotice {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

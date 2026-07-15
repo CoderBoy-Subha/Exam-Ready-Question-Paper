@@ -1,0 +1,95 @@
+.button {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 14px 30px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+
+.button:active {
+  transform: scale(0.97);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.primary {
+  background: linear-gradient(135deg, var(--tide) 0%, var(--tide-strong) 100%);
+  color: white;
+  box-shadow: 0 14px 30px -12px rgba(20, 98, 114, 0.65);
+}
+
+.primary:hover:not(:disabled) {
+  box-shadow: 0 18px 36px -12px rgba(20, 98, 114, 0.75);
+  transform: translateY(-1px);
+}
+
+.ghost {
+  background: rgba(15, 76, 92, 0.08);
+  color: var(--current);
+}
+
+.ghost:hover:not(:disabled) {
+  background: rgba(15, 76, 92, 0.14);
+}
+
+.label {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.15) 55%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ripple {
+    animation: rippleExpand 0.75s ease-out forwards;
+  }
+}
+
+.dropletSpinner {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.dropletSpinner span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50% 50% 50% 0;
+  background: currentColor;
+  transform: rotate(45deg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dropletSpinner span {
+    animation: bob 0.9s ease-in-out infinite;
+  }
+  .dropletSpinner span:nth-child(2) { animation-delay: 0.12s; }
+  .dropletSpinner span:nth-child(3) { animation-delay: 0.24s; }
+}
+
+@keyframes bob {
+  0%, 100% { transform: rotate(45deg) translateY(0); opacity: 0.5; }
+  50% { transform: rotate(45deg) translateY(-5px); opacity: 1; }
+}

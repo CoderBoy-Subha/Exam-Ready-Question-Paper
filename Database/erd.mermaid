@@ -1,0 +1,67 @@
+erDiagram
+    VISITORS ||--o{ SESSIONS : "opens"
+    SESSIONS ||--o{ GENERATIONS : "runs"
+    GENERATIONS ||--o| RATINGS : "receives"
+    GENERATIONS ||--o{ GENERATION_QUESTION_SELECTIONS : "configured by"
+    QUESTION_CATEGORIES ||--o{ GENERATION_QUESTION_SELECTIONS : "defines"
+
+    VISITORS {
+        uuid id PK
+        inet ip_address UK
+        text user_agent
+        timestamptz first_seen_at
+        timestamptz last_seen_at
+        int visit_count
+    }
+
+    SESSIONS {
+        uuid id PK
+        uuid visitor_id FK
+        timestamptz created_at
+        timestamptz last_activity_at
+        timestamptz expires_at
+        timestamptz purged_at
+    }
+
+    GENERATIONS {
+        uuid id PK
+        uuid session_id FK
+        uuid visitor_id FK
+        uuid parent_generation_id FK
+        inet ip_address
+        enum content_source
+        enum file_format
+        smallint target_total_marks
+        enum difficulty
+        text custom_instructions
+        enum status
+        boolean turnstile_verified
+        jsonb gemini_request_meta
+        timestamptz created_at
+        timestamptz expires_at
+        timestamptz purged_at
+    }
+
+    QUESTION_CATEGORIES {
+        text code PK
+        enum kind
+        smallint marks
+        text display_label
+        smallint sort_order
+    }
+
+    GENERATION_QUESTION_SELECTIONS {
+        uuid generation_id PK_FK
+        text category_code PK_FK
+        smallint question_count
+    }
+
+    RATINGS {
+        uuid id PK
+        uuid generation_id FK_UK
+        text email
+        smallint score
+        text comment
+        timestamptz created_at
+        timestamptz updated_at
+    }

@@ -1,0 +1,117 @@
+.widget {
+  margin-top: 30px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(15, 76, 92, 0.1);
+}
+
+.prompt {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--current);
+}
+
+.stars {
+  display: flex;
+  gap: 6px;
+}
+
+.star {
+  border: none;
+  background: none;
+  font-size: 22px;
+  line-height: 1;
+  color: rgba(15, 76, 92, 0.22);
+  cursor: pointer;
+  padding: 2px;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.star:hover {
+  transform: scale(1.12);
+}
+
+.star[data-filled='true'] {
+  color: var(--tide);
+}
+
+.details {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+  animation: fadeUp 0.35s ease both;
+}
+
+.comment {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(15, 76, 92, 0.16);
+  border-radius: 12px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.emailInput {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(15, 76, 92, 0.16);
+  border-radius: 999px;
+  padding: 9px 14px;
+}
+
+.emailToggle {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  color: var(--tide);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.submit {
+  align-self: flex-start;
+  border: none;
+  background: var(--tide);
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 9px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.submit:hover:not(:disabled) {
+  background: var(--tide-strong);
+}
+
+.submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.thanks {
+  margin-top: 30px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(15, 76, 92, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--current);
+}
+
+.thanksDrop {
+  width: 10px;
+  height: 10px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(45deg);
+  background: var(--tide);
+  flex-shrink: 0;
+}

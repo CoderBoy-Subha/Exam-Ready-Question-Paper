@@ -1,0 +1,122 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.track {
+  position: relative;
+  height: 22px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(15, 76, 92, 0.07), rgba(15, 76, 92, 0.03));
+  border: 1px solid rgba(15, 76, 92, 0.12);
+  overflow: visible;
+  box-shadow: inset 0 2px 5px rgba(15, 76, 92, 0.12);
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  border-radius: 999px 0 0 999px;
+  background: linear-gradient(180deg, #7fd4de 0%, var(--tide) 100%);
+  overflow: hidden;
+  transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1), background 0.4s ease;
+}
+
+.track.exact .fill {
+  border-radius: 999px;
+  background: linear-gradient(180deg, #7fe0c4 0%, #1b8c6f 100%);
+}
+
+.track.over .fill {
+  background: linear-gradient(180deg, #f3b3a3 0%, var(--coral-warn) 100%);
+}
+
+.meniscus {
+  position: absolute;
+  top: -3px;
+  right: -1px;
+  width: 10px;
+  height: calc(100% + 6px);
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 50%;
+  filter: blur(1px);
+}
+
+.bubble {
+  position: absolute;
+  bottom: 2px;
+  right: 6px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bubble {
+    animation: bubbleRise 0.9s ease-out forwards;
+  }
+}
+
+.targetMarker {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 2px;
+  background: var(--current);
+  transform: translateX(-1px);
+}
+
+.targetFlag {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  transform: translateX(-50%) rotate(45deg);
+  background: var(--current);
+}
+
+.exactRipple {
+  position: absolute;
+  inset: -14px;
+  border: 1.5px solid rgba(27, 140, 111, 0.55);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .exactRipple {
+    animation: rippleExpand 1s ease-out;
+  }
+}
+
+.readout {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+}
+
+.readoutNumbers {
+  font-size: 18px;
+  color: var(--current);
+  font-variant-numeric: tabular-nums;
+}
+
+.readoutDivider {
+  margin: 0 4px;
+  color: var(--ink-soft);
+}
+
+.overNumber {
+  color: var(--coral-warn);
+}
+
+.readoutHint {
+  font-size: 12px;
+  color: var(--ink-soft);
+  letter-spacing: 0.01em;
+}

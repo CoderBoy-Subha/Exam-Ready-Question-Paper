@@ -1,0 +1,123 @@
+.footer {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 880px;
+  margin-top: 40px;
+  padding-top: 28px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--text);
+}
+
+.wordmarkDrop {
+  width: 9px;
+  height: 9px;
+  transform: rotate(45deg);
+  border-radius: 2px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  flex-shrink: 0;
+}
+
+.tagline {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  max-width: 46ch;
+}
+
+.stats {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 22px 26px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  flex-wrap: wrap;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 110px;
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-style: italic;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.star {
+  font-size: 15px;
+  color: var(--accent3);
+}
+
+.statLabel {
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 0.01em;
+}
+
+.divider {
+  width: 1px;
+  align-self: stretch;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+@media (max-width: 560px) {
+  .stats {
+    gap: 20px;
+    padding: 20px;
+  }
+  .divider {
+    display: none;
+  }
+}
+
+.bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-faint);
+  padding-bottom: 8px;
+}
+
+.bottomDot {
+  color: var(--text-faint);
+}

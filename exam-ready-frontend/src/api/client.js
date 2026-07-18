@@ -1,7 +1,3 @@
-// Assumed backend contract — this was built ahead of the Express routes,
-// so it's the single place to update if actual endpoint shapes differ.
-// See README.md for the full contract list.
-
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 async function request(path, options = {}) {
@@ -42,9 +38,6 @@ export async function generatePaper({ sessionId, config, regenerateFrom, makeItD
   })
 }
 
-// Used when landing directly on /paper/:generationId (refresh, deep
-// link, browser back/forward) and Redux doesn't already hold that
-// generation's data.
 export async function getGeneration(generationId) {
   return request(`/generations/${generationId}`)
 }
@@ -59,6 +52,11 @@ export async function submitRating(generationId, { score, comment, email }) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ score, comment: comment || null, email: email || null }),
   })
+}
+
+// Public footer stats: { visitorCount, papersGenerated, ratingCount, averageRating }
+export async function getStats() {
+  return request('/stats')
 }
 
 export function sendCleanupBeacon(sessionId) {

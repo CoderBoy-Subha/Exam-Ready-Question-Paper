@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js",
+    "start": "nodemon src/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src tests"

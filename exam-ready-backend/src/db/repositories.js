@@ -205,6 +205,30 @@ export const ratingsRepo = {
 }
 
 // ---------------------------------------------------------------------
+// stats — public, aggregate, read-only counts for the footer. No PII,
+// safe to expose unauthenticated. Cached in Redis (services/stats.service.js)
+// since exact real-time precision doesn't matter here but query load does.
+// ---------------------------------------------------------------------
+export const statsRepo = {
+  async getPublicStats() {
+    const { rows } = await query(
+      `SELECT
+         (SELECT COUNT(*) FROM visitors) AS visitor_count,
+         (SELECT COUNT(*) FROM generations WHERE status = 'completed') AS papers_generated,
+         (SELECT COUNT(*) FROM ratings) AS rating_count,
+         (SELECT COALESCE(ROUND(AVG(score)::numeric, 1), 0) FROM ratings) AS average_rating`,
+    )
+    const row = rows[0]
+    return {
+      visitorCount: Number(row.visitor_count),
+      papersGenerated: Number(row.papers_generated),
+      ratingCount: Number(row.rating_count),
+      averageRating: Number(row.average_rating),
+    }
+  },
+}
+
+// ---------------------------------------------------------------------
 // purge — thin wrapper around the DB's own purge_expired_sessions()
 // function (defined in schema.sql). See services/purge.service.js for
 // how the returned ids get used to clear Redis.

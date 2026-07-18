@@ -5,7 +5,8 @@ import StepIndicator from './components/StepIndicator.jsx'
 import UploadStep from './components/UploadStep.jsx'
 import ConfigStep from './components/ConfigStep.jsx'
 import PaperResult from './components/PaperResult.jsx'
-import ConsentNotice from './components/ConsentNotice.jsx'
+//import ConsentNotice from './components/ConsentNotice.jsx'
+import Footer from './components/Footer.jsx'
 import { useSessionCleanup } from './hooks/useSessionCleanup.js'
 import styles from './App.module.css'
 
@@ -29,6 +30,8 @@ function Layout() {
           <Outlet />
         </GlassPanel>
       </main>
+
+      <Footer />
 
       {/*<ConsentNotice />*/}
     </div>

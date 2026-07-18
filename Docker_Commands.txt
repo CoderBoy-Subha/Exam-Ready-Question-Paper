@@ -1,0 +1,7 @@
+#------Create Docker------
+docker run -d --name exam-ready-redis -p 6379:6379 redis      # create the docker
+
+#------control docker------
+docker stop exam-ready-redis    # stop
+docker start exam-ready-redis   # start again, keeps data
+docker rm -f exam-ready-redis   # wipe it and start clean

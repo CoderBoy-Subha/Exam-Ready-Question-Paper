@@ -19,6 +19,7 @@ import {
 } from '../controllers/generations.controller.js'
 import { submitRatingHandler } from '../controllers/ratings.controller.js'
 import { cleanupHandler } from '../controllers/cleanup.controller.js'
+import { getStatsHandler } from '../controllers/stats.controller.js'
 import { env } from '../config/env.js'
 
 const ALLOWED_MIMETYPES = [
@@ -63,6 +64,8 @@ function handleUpload(fieldName) {
 export const router = Router()
 
 router.get('/health', (req, res) => res.json({ ok: true }))
+
+router.get('/stats', asyncHandler(getStatsHandler))
 
 router.post(
   '/upload',

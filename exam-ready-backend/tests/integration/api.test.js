@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest'
 import request from 'supertest'
 
-vi.mock('../../src/services/gemini.service.js', async (importOriginal) => {
+vi.mock('../../src/services/aiGeneration.service.js', async (importOriginal) => {
   const actual = await importOriginal()
   return { ...actual, generatePaper: vi.fn() }
 })
 
-const { generatePaper } = await import('../../src/services/gemini.service.js')
+const { generatePaper } = await import('../../src/services/aiGeneration.service.js')
 const { createApp } = await import('../../src/app.js')
 const { connectRedis, disconnectRedis } = await import('../../src/cache/redisClient.js')
 const { pool } = await import('../../src/db/pool.js')
@@ -21,6 +21,8 @@ const HAPPY_PATH_IP = '198.51.100.10'
 const VALIDATION_IP = '198.51.100.20'
 const RATE_LIMIT_IP = '198.51.100.30'
 const PURGE_IP = '198.51.100.40'
+const MULTI_FILE_IP = '198.51.100.50'
+const GET_ROUTE_IP = '198.51.100.60'
 
 async function cleanupIp(ip) {
   await pool.query('DELETE FROM visitors WHERE ip_address = $1', [ip])
@@ -264,5 +266,144 @@ describe('purge behavior', () => {
     expect(purgedIds).not.toContain(liveSession.id)
 
     await pool.query('DELETE FROM sessions WHERE id IN ($1, $2)', [expiredSessionId, liveSession.id])
+  })
+})
+
+describe('multi-file upload', () => {
+  afterEach(async () => cleanupIp(MULTI_FILE_IP))
+
+  it('accepts several files of different formats in one upload and reports fileCount', async () => {
+    const uploadRes = await request(app)
+      .post('/api/upload')
+      .set('X-Forwarded-For', MULTI_FILE_IP)
+      .field('contentSource', 'study_material')
+      .attach('files', Buffer.from('%PDF-1.4 fake chapter one'), {
+        filename: 'chapter1.pdf',
+        contentType: 'application/pdf',
+      })
+      .attach('files', Buffer.from([0x89, 0x50, 0x4e, 0x47]), {
+        filename: 'diagram.png',
+        contentType: 'image/png',
+      })
+
+    expect(uploadRes.status).toBe(201)
+    expect(uploadRes.body.fileCount).toBe(2)
+
+    // the session's stored file_format should be 'mixed' since a pdf
+    // and an image were uploaded together — confirmed via a generation
+    // row, since fileFormat itself isn't returned by /upload.
+    generatePaper.mockResolvedValue({ paper: mockPaper, meta: { ok: true, model: 'test-model' } })
+    const genRes = await request(app)
+      .post('/api/generations')
+      .set('X-Forwarded-For', MULTI_FILE_IP)
+      .send({
+        sessionId: uploadRes.body.sessionId,
+        targetTotalMarks: 2,
+        difficulty: 'easy',
+        questionCounts: { MCQ_1: 2 },
+      })
+    expect(genRes.status).toBe(201)
+
+    const { rows } = await pool.query('SELECT file_format FROM generations WHERE id = $1', [genRes.body.generationId])
+    expect(rows[0].file_format).toBe('mixed')
+
+    // and the AI call should have received one Part per uploaded file
+    const sentParts = generatePaper.mock.calls[0][0].extractedContent.payload.parts
+    expect(sentParts).toHaveLength(2)
+    expect(sentParts.map((p) => p.sourceName).sort()).toEqual(['chapter1.pdf', 'diagram.png'])
+  })
+
+  it('rejects a file whose format is not allowed for the chosen content source', async () => {
+    const res = await request(app)
+      .post('/api/upload')
+      .set('X-Forwarded-For', MULTI_FILE_IP)
+      .field('contentSource', 'study_material')
+      .attach('files', Buffer.from('plain text file'), {
+        filename: 'notes.txt',
+        contentType: 'text/plain',
+      })
+
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects more files than the configured maximum', async () => {
+    let req = request(app)
+      .post('/api/upload')
+      .set('X-Forwarded-For', MULTI_FILE_IP)
+      .field('contentSource', 'study_material')
+    // UPLOAD_MAX_FILES is 6 by default; attach one more than that
+    for (let i = 0; i < 7; i++) {
+      req = req.attach('files', Buffer.from(`%PDF-1.4 fake ${i}`), {
+        filename: `f${i}.pdf`,
+        contentType: 'application/pdf',
+      })
+    }
+    const res = await req
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('GET /api/generations/:id', () => {
+  afterEach(async () => cleanupIp(GET_ROUTE_IP))
+
+  it('returns the same paper shape as the create response, supporting refresh/deep-link', async () => {
+    generatePaper.mockResolvedValue({ paper: mockPaper, meta: { ok: true, model: 'test-model' } })
+
+    const uploadRes = await request(app)
+      .post('/api/upload')
+      .set('X-Forwarded-For', GET_ROUTE_IP)
+      .field('contentSource', 'syllabus')
+      .field('syllabusText', 'Refresh/deep-link test material.')
+
+    const genRes = await request(app)
+      .post('/api/generations')
+      .set('X-Forwarded-For', GET_ROUTE_IP)
+      .send({
+        sessionId: uploadRes.body.sessionId,
+        targetTotalMarks: 2,
+        difficulty: 'easy',
+        questionCounts: { MCQ_1: 2 },
+      })
+    const { generationId } = genRes.body
+
+    const getRes = await request(app).get(`/api/generations/${generationId}`)
+    expect(getRes.status).toBe(200)
+    expect(getRes.body).toEqual(genRes.body)
+  })
+
+  it('returns 410 for an id that was never generated or has expired', async () => {
+    const res = await request(app).get('/api/generations/00000000-0000-0000-0000-000000000000')
+    expect(res.status).toBe(410)
+  })
+})
+
+describe('no response ever names the underlying AI vendor', () => {
+  const NEUTRAL_IP = '198.51.100.70'
+  afterEach(async () => cleanupIp(NEUTRAL_IP))
+
+  it('a failed generation returns a vendor-neutral error message', async () => {
+    const { AppError } = await import('../../src/utils/AppError.js')
+    generatePaper.mockRejectedValue(
+      AppError.badGateway('The AI engine returned a response that was not valid JSON.'),
+    )
+
+    const uploadRes = await request(app)
+      .post('/api/upload')
+      .set('X-Forwarded-For', NEUTRAL_IP)
+      .field('contentSource', 'syllabus')
+      .field('syllabusText', 'Vendor-neutral error test.')
+
+    const genRes = await request(app)
+      .post('/api/generations')
+      .set('X-Forwarded-For', NEUTRAL_IP)
+      .send({
+        sessionId: uploadRes.body.sessionId,
+        targetTotalMarks: 2,
+        difficulty: 'easy',
+        questionCounts: { MCQ_1: 2 },
+      })
+
+    expect(genRes.status).toBe(502)
+    expect(JSON.stringify(genRes.body)).not.toMatch(/gemini/i)
   })
 })

@@ -1,50 +1,63 @@
 import mammoth from 'mammoth'
 
 /**
- * Converts a raw upload (multer memory-storage file) + contentSource
- * into the normalized payload shape that gets cached in Redis for the
- * session. Matches the two paths from the spec:
- *   - PDFs and images -> sent directly to Gemini (native support),
- *     so we just base64-encode the buffer and keep the mimeType.
- *   - .docx -> converted to plain text server-side first (Gemini
- *     doesn't accept .docx directly).
- *   - syllabus pasted as text -> used as-is, no file involved.
+ * Converts a set of raw uploads (multer memory-storage files, zero or
+ * more) + optional pasted syllabus text into ONE normalized payload:
  *
- * Never writes anything to disk — multer uses memory storage, and the
- * buffer is only ever base64'd into the Redis payload or handed to
+ *   { parts: [
+ *       { kind: 'text',   text, sourceName },
+ *       { kind: 'inline', mimeType, base64, sourceName },
+ *       ...
+ *   ] }
+ *
+ * One entry per source (each uploaded file, plus pasted text if any),
+ * regardless of how many there are — this is what lets a single
+ * upload mix a PDF, two images, and a pasted paragraph without any
+ * special-casing downstream. Each part keeps its own sourceName so
+ * the AI prompt (aiGeneration.service.js) can label sources if useful.
+ *
+ * Never writes anything to disk — multer uses memory storage, and
+ * buffers are only ever base64'd into the payload or handed to
  * mammoth in-memory.
  */
-export async function extractContent({ contentSource, file, syllabusText }) {
-  if (!file) {
-    if (contentSource !== 'syllabus' || !syllabusText?.trim()) {
-      throw new Error('Either a file or syllabus text is required.')
-    }
-    return {
-      fileFormat: 'text',
-      payload: { kind: 'text', text: syllabusText.trim() },
-    }
+export async function extractContent({ contentSource, files, syllabusText }) {
+  const parts = []
+  const formatsSeen = new Set()
+
+  if (contentSource === 'syllabus' && syllabusText?.trim()) {
+    parts.push({ kind: 'text', text: syllabusText.trim(), sourceName: 'pasted text' })
+    formatsSeen.add('text')
   }
 
-  const fileFormat = detectFileFormat(file.mimetype)
+  for (const file of files || []) {
+    const format = detectFileFormat(file.mimetype)
+    formatsSeen.add(format)
 
-  if (fileFormat === 'docx') {
-    const { value: text } = await mammoth.extractRawText({ buffer: file.buffer })
-    if (!text.trim()) {
-      throw new Error('Could not extract any text from this Word document.')
+    if (format === 'docx') {
+      const { value: text } = await mammoth.extractRawText({ buffer: file.buffer })
+      if (!text.trim()) {
+        throw new Error(`Could not extract any text from "${file.originalname}".`)
+      }
+      parts.push({ kind: 'text', text: text.trim(), sourceName: file.originalname })
+      continue
     }
-    return { fileFormat, payload: { kind: 'text', text: text.trim() } }
-  }
 
-  // pdf or image: Gemini processes these natively, so pass the bytes
-  // straight through as inline data rather than extracting anything.
-  return {
-    fileFormat,
-    payload: {
+    // pdf or image: the AI engine processes these natively, so pass
+    // the bytes straight through as inline data.
+    parts.push({
       kind: 'inline',
       mimeType: file.mimetype,
       base64: file.buffer.toString('base64'),
-    },
+      sourceName: file.originalname,
+    })
   }
+
+  if (parts.length === 0) {
+    throw new Error('Upload at least one file, or paste syllabus text.')
+  }
+
+  const fileFormat = formatsSeen.size === 1 ? [...formatsSeen][0] : 'mixed'
+  return { fileFormat, payload: { parts } }
 }
 
 export function detectFileFormat(mimetype) {

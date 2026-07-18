@@ -1,17 +1,58 @@
+import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import { setTargetMarks, setCustomInstructions, selectComputedTotal } from '../store/configSlice.js'
+import { startGeneration, generationSucceeded, generationFailed } from '../store/generationSlice.js'
+import { generatePaper } from '../api/client.js'
 import QuestionCategoryGrid from './QuestionCategoryGrid.jsx'
 import MarksVessel from './MarksVessel.jsx'
 import DifficultySelector from './DifficultySelector.jsx'
 import RippleButton from './RippleButton.jsx'
 import styles from './ConfigStep.module.css'
 
-export default function ConfigStep({ onBack, onGenerate }) {
+export default function ConfigStep() {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const sessionId = useSelector((s) => s.upload.sessionId)
   const targetMarks = useSelector((s) => s.config.targetMarks)
   const customInstructions = useSelector((s) => s.config.customInstructions)
   const currentTotal = useSelector(selectComputedTotal)
+  const config = useSelector((s) => s.config)
+  const generationStatus = useSelector((s) => s.generation.status)
+  const generationError = useSelector((s) => s.generation.error)
   const canGenerate = currentTotal === targetMarks && targetMarks > 0
+
+  // No active session (fresh visit, refresh, or expired) -> back to upload.
+  useEffect(() => {
+    if (!sessionId) navigate('/upload', { replace: true })
+  }, [sessionId, navigate])
+
+  const handleGenerate = async () => {
+    dispatch(startGeneration())
+    try {
+      const result = await generatePaper({ sessionId, config })
+      dispatch(generationSucceeded(result))
+      navigate(`/paper/${result.generationId}`)
+    } catch (err) {
+      dispatch(generationFailed(err.message))
+    }
+  }
+
+  if (generationStatus === 'pending') {
+    return (
+      <div className={styles.pending}>
+        <div className={styles.pendingDrop} aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+        <h2>Working through your material&hellip;</h2>
+        <p>Pulling questions from what you uploaded and balancing them to your mark scheme.</p>
+      </div>
+    )
+  }
+
+  if (!sessionId) return null
 
   return (
     <div className={styles.step}>
@@ -21,6 +62,8 @@ export default function ConfigStep({ onBack, onGenerate }) {
           Set how many questions of each type — the paper fills to your target automatically.
         </p>
       </div>
+
+      {generationError && <p className={styles.gateHint}>{generationError}</p>}
 
       <div className={styles.targetRow}>
         <label className={styles.targetLabel} htmlFor="targetMarks">
@@ -64,10 +107,10 @@ export default function ConfigStep({ onBack, onGenerate }) {
       </div>
 
       <div className={styles.actions}>
-        <RippleButton variant="ghost" onClick={onBack}>
+        <RippleButton variant="ghost" onClick={() => navigate('/upload')}>
           Back
         </RippleButton>
-        <RippleButton variant="primary" onClick={onGenerate} disabled={!canGenerate}>
+        <RippleButton variant="primary" onClick={handleGenerate} disabled={!canGenerate}>
           Generate paper
         </RippleButton>
       </div>

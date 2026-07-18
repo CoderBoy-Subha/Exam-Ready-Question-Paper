@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 const initialState = {
-  status: 'idle', // idle | pending | completed | failed
+  status: 'idle', // idle | pending | loading | completed | failed
   generationId: null,
   paper: null,
   error: null,
@@ -12,7 +12,11 @@ const generationSlice = createSlice({
   initialState,
   reducers: {
     startGeneration(state) {
-      state.status = 'pending'
+      state.status = 'pending' // actively generating via the AI engine
+      state.error = null
+    },
+    startLoadingExisting(state) {
+      state.status = 'loading' // fetching an already-generated paper by id
       state.error = null
     },
     generationSucceeded(state, action) {
@@ -30,7 +34,12 @@ const generationSlice = createSlice({
   },
 })
 
-export const { startGeneration, generationSucceeded, generationFailed, resetGeneration } =
-  generationSlice.actions
+export const {
+  startGeneration,
+  startLoadingExisting,
+  generationSucceeded,
+  generationFailed,
+  resetGeneration,
+} = generationSlice.actions
 
 export default generationSlice.reducer

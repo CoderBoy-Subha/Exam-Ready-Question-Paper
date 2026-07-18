@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit'
 
 const initialState = {
   contentSource: 'study_material', // 'study_material' | 'syllabus'
-  file: null, // serializable metadata only: { name, size, type } — never the raw File
+  files: [], // serializable metadata only: [{ name, size, type }] — never the raw File objects
   syllabusText: '',
   sessionId: null,
   status: 'idle', // idle | uploading | ready | error
@@ -15,7 +15,7 @@ const uploadSlice = createSlice({
   reducers: {
     setContentSource(state, action) {
       state.contentSource = action.payload
-      state.file = null
+      state.files = []
       state.syllabusText = ''
     },
     uploadStarted(state) {
@@ -25,7 +25,7 @@ const uploadSlice = createSlice({
     uploadSucceeded(state, action) {
       state.status = 'ready'
       state.sessionId = action.payload.sessionId
-      state.file = action.payload.file ?? null
+      state.files = action.payload.files ?? []
     },
     uploadFailed(state, action) {
       state.status = 'error'

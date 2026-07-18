@@ -1,42 +1,56 @@
 /* Shared styles for small components that don't need their own CSS module:
    StepIndicator, DifficultySelector, ConsentNotice. */
 
-/* StepIndicator */
+/* StepIndicator — pill nav container matching the reference app's tabs */
 .stepList {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 6px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
 }
 
 .stepItem {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  color: var(--ink-soft);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--text-dim);
+  transition: background 0.4s ease, color 0.4s ease;
 }
 
 .stepDrop {
-  width: 9px;
-  height: 9px;
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(45deg);
-  background: rgba(15, 76, 92, 0.18);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-faint);
   transition: background 0.4s ease, transform 0.4s ease;
+  flex-shrink: 0;
 }
 
-.stepItemActive .stepDrop,
-.stepItemDone .stepDrop {
-  background: var(--tide);
+.stepItemActive {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  color: var(--on-accent);
+  box-shadow: 0 8px 20px -8px rgba(126, 232, 250, 0.5);
 }
 
 .stepItemActive .stepDrop {
-  transform: rotate(45deg) scale(1.25);
+  background: var(--on-accent);
+  transform: scale(1.3);
+}
+
+.stepItemDone .stepDrop {
+  background: var(--accent);
 }
 
 .stepLabel {
@@ -54,7 +68,8 @@
   display: inline-flex;
   padding: 4px;
   gap: 4px;
-  background: rgba(15, 76, 92, 0.06);
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
   border-radius: 999px;
 }
 
@@ -65,19 +80,19 @@
   border-radius: 999px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--ink-soft);
+  color: var(--text-dim);
   cursor: pointer;
   transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .difficultyOption:hover {
-  color: var(--current);
+  color: var(--text);
 }
 
 .difficultyOptionActive {
-  background: var(--tide);
-  color: white;
-  box-shadow: 0 6px 16px -6px rgba(27, 122, 140, 0.6);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  color: var(--on-accent);
+  box-shadow: 0 6px 16px -6px rgba(126, 232, 250, 0.5);
 }
 
 /* ConsentNotice */
@@ -90,11 +105,11 @@
   width: calc(100% - 32px);
   font-size: 12.5px;
   line-height: 1.5;
-  color: var(--ink-soft);
-  background: var(--foam-strong);
+  color: var(--text-dim);
+  background: var(--glass-bg-strong);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
   padding: 10px 14px;
   display: flex;
@@ -106,8 +121,8 @@
 
 .consentDismiss {
   border: none;
-  background: rgba(15, 76, 92, 0.08);
-  color: var(--current);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
   border-radius: 999px;
   width: 22px;
   height: 22px;

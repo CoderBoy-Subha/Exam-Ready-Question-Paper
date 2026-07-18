@@ -16,10 +16,10 @@ async function request(path, options = {}) {
   return res.json()
 }
 
-export async function uploadSource({ contentSource, file, syllabusText, turnstileToken }) {
+export async function uploadSource({ contentSource, files, syllabusText, turnstileToken }) {
   const form = new FormData()
   form.append('contentSource', contentSource)
-  if (file) form.append('file', file)
+  ;(files || []).forEach((file) => form.append('files', file))
   if (syllabusText) form.append('syllabusText', syllabusText)
   if (turnstileToken) form.append('turnstileToken', turnstileToken)
 
@@ -40,6 +40,13 @@ export async function generatePaper({ sessionId, config, regenerateFrom, makeItD
       makeItDifferent: Boolean(makeItDifferent),
     }),
   })
+}
+
+// Used when landing directly on /paper/:generationId (refresh, deep
+// link, browser back/forward) and Redux doesn't already hold that
+// generation's data.
+export async function getGeneration(generationId) {
+  return request(`/generations/${generationId}`)
 }
 
 export function getDownloadUrl(generationId, format) {

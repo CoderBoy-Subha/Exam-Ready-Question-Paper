@@ -4,11 +4,16 @@ import { AppError } from '../utils/AppError.js'
 import { CATEGORY_BY_CODE, computeTotalMarks } from '../shared/questionCategories.js'
 
 // ---------------------------------------------------------------------
-// This closes the spec's explicitly-flagged open item: "Exact Gemini
-// output format contract". Decision: force structured JSON via
-// responseMimeType + responseJsonSchema (see js-genai's own
-// codegen_instructions.md — that's the current, documented pattern
-// for @google/genai, not the deprecated @google/generative-ai
+// Renamed from gemini.service.js: the provider name shouldn't leak
+// anywhere a user (or an attacker probing error messages / stack
+// traces) can see it — see every AppError message below, none of
+// which name the vendor. The env vars (GEMINI_API_KEY, GEMINI_MODEL)
+// keep their names since those are server-side config, never sent to
+// a client; renaming them would just be confusing for zero benefit.
+//
+// Structured JSON output via responseMimeType + responseJsonSchema —
+// see js-genai's own codegen_instructions.md, the current documented
+// pattern for @google/genai (NOT the deprecated @google/generative-ai
 // package's genAI.getGenerativeModel().generateContent() shape).
 // ---------------------------------------------------------------------
 
@@ -98,19 +103,23 @@ Difficulty: ${config.difficulty === 'mixture' ? 'Mixture — split roughly evenl
   return prompt
 }
 
+/**
+ * extractedContent.payload.parts is the array produced by
+ * fileExtraction.service.js — one entry per uploaded file / pasted
+ * text block. Each 'text' part becomes a labeled text Part; each
+ * 'inline' part (pdf/image) becomes an inlineData Part. Multiple
+ * files just mean multiple Parts in the same request.
+ */
 function buildContentParts({ extractedContent, promptText }) {
   const parts = [{ text: promptText }]
 
-  if (extractedContent.payload.kind === 'inline') {
-    parts.push({
-      inlineData: {
-        mimeType: extractedContent.payload.mimeType,
-        data: extractedContent.payload.base64,
-      },
-    })
-  } else {
-    parts.unshift({ text: `Source material:\n"""\n${extractedContent.payload.text}\n"""\n` })
-  }
+  extractedContent.payload.parts.forEach((sourcePart) => {
+    if (sourcePart.kind === 'inline') {
+      parts.push({ inlineData: { mimeType: sourcePart.mimeType, data: sourcePart.base64 } })
+    } else {
+      parts.push({ text: `Source material (${sourcePart.sourceName}):\n"""\n${sourcePart.text}\n"""\n` })
+    }
+  })
 
   return [{ role: 'user', parts }]
 }
@@ -135,7 +144,7 @@ function marksReconcile(paper, config) {
   return { ok: expectedTotal === actualTotal && expectedCount === actualCount, expectedTotal, actualTotal, expectedCount, actualCount }
 }
 
-async function callGemini({ client, contents, systemInstruction }) {
+async function callGenerativeModel({ client, contents, systemInstruction }) {
   const response = await client.models.generateContent({
     model: env.geminiModel,
     contents,
@@ -152,8 +161,8 @@ async function callGemini({ client, contents, systemInstruction }) {
     const blockReason = response.promptFeedback?.blockReason
     throw AppError.badGateway(
       blockReason
-        ? `Gemini declined to generate a paper from this material (${blockReason}).`
-        : 'Gemini returned an empty response.',
+        ? `The AI engine declined to generate a paper from this material (${blockReason}).`
+        : 'The AI engine returned an empty response.',
     )
   }
 
@@ -161,7 +170,7 @@ async function callGemini({ client, contents, systemInstruction }) {
   try {
     parsed = JSON.parse(text)
   } catch {
-    throw AppError.badGateway('Gemini returned a response that was not valid JSON.')
+    throw AppError.badGateway('The AI engine returned a response that was not valid JSON.')
   }
   return parsed
 }
@@ -171,31 +180,31 @@ const SYSTEM_INSTRUCTION =
 
 /**
  * @param {object} params
- * @param {object} params.extractedContent - { fileFormat, payload } from fileExtraction.service.js
+ * @param {object} params.extractedContent - { fileFormat, payload: { parts } } from fileExtraction.service.js
  * @param {object} params.config - { questionCounts, targetTotalMarks, difficulty, customInstructions }
  * @param {string[]} [params.previousQuestionPrompts] - for "make it different" regeneration
  * @param {object} [params.client] - injectable GoogleGenAI-shaped client, for tests
  */
 export async function generatePaper({ extractedContent, config, previousQuestionPrompts, client }) {
-  const geminiClient = client || getClient()
+  const modelClient = client || getClient()
   const promptText = buildPromptText({ config, previousQuestionPrompts })
   const contents = buildContentParts({ extractedContent, promptText })
 
-  let paper = await callGemini({ client: geminiClient, contents, systemInstruction: SYSTEM_INSTRUCTION })
+  let paper = await callGenerativeModel({ client: modelClient, contents, systemInstruction: SYSTEM_INSTRUCTION })
   let reconciliation = marksReconcile(paper, config)
 
   if (!reconciliation.ok) {
-    // One corrective retry — Gemini occasionally drifts from an exact
-    // count/mark spec. Cost of one extra call is worth not shipping a
-    // paper that silently doesn't match what the user configured.
+    // One corrective retry — the model occasionally drifts from an
+    // exact count/mark spec. Cost of one extra call is worth not
+    // shipping a paper that silently doesn't match what was configured.
     const correctivePrompt = `${promptText}\n\nIMPORTANT: a previous attempt returned ${reconciliation.actualCount} questions totalling ${reconciliation.actualTotal} marks. You MUST return exactly ${reconciliation.expectedCount} questions totalling ${reconciliation.expectedTotal} marks — recheck the breakdown above and match it exactly.`
     const retryContents = buildContentParts({ extractedContent, promptText: correctivePrompt })
-    paper = await callGemini({ client: geminiClient, contents: retryContents, systemInstruction: SYSTEM_INSTRUCTION })
+    paper = await callGenerativeModel({ client: modelClient, contents: retryContents, systemInstruction: SYSTEM_INSTRUCTION })
     reconciliation = marksReconcile(paper, config)
 
     if (!reconciliation.ok) {
       throw AppError.badGateway(
-        'Gemini could not produce a paper matching the requested mark scheme after a retry. Please try generating again.',
+        'The AI engine could not produce a paper matching the requested mark scheme after a retry. Please try generating again.',
       )
     }
   }

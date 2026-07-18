@@ -2,7 +2,7 @@ import { AppError } from '../utils/AppError.js'
 import { generationsRepo } from '../db/repositories.js'
 import { env } from '../config/env.js'
 
-// Gates the endpoint that actually spends Gemini API budget. Backed by
+// Gates the endpoint that actually spends AI-generation budget. Backed by
 // the generations table (idx_generations_ip_created) rather than an
 // in-memory counter, so the limit holds even across multiple server
 // instances / restarts — see DESIGN.md from the schema deliverable.

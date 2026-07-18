@@ -43,4 +43,5 @@ export const env = {
 
   rateLimitMaxGenerationsPerHour: optionalInt('RATE_LIMIT_MAX_GENERATIONS_PER_HOUR', 10),
   uploadMaxFileSizeMb: optionalInt('UPLOAD_MAX_FILE_SIZE_MB', 15),
+  uploadMaxFiles: optionalInt('UPLOAD_MAX_FILES', 6),
 }

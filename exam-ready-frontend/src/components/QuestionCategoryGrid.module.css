@@ -16,7 +16,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--ink-soft);
+  color: var(--text-dim);
   margin: 0 0 10px;
 }
 
@@ -32,13 +32,13 @@
   justify-content: space-between;
   gap: 10px;
   padding: 6px 4px;
-  border-bottom: 1px solid rgba(15, 76, 92, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .marksTag {
-  font-family: var(--font-mono);
   font-size: 13px;
-  color: var(--current);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
   min-width: 44px;
 }
 
@@ -46,8 +46,8 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(15, 76, 92, 0.14);
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
   border-radius: 999px;
   padding: 2px;
 }
@@ -58,7 +58,7 @@
   border-radius: 50%;
   border: none;
   background: transparent;
-  color: var(--tide);
+  color: var(--accent);
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
@@ -66,11 +66,11 @@
 }
 
 .stepperBtn:hover:not(:disabled) {
-  background: rgba(27, 122, 140, 0.14);
+  background: rgba(126, 232, 250, 0.14);
 }
 
 .stepperBtn:disabled {
-  color: rgba(15, 76, 92, 0.25);
+  color: var(--text-faint);
   cursor: not-allowed;
 }
 
@@ -79,9 +79,9 @@
   text-align: center;
   border: none;
   background: transparent;
-  font-family: var(--font-mono);
   font-size: 14px;
-  color: var(--current);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
   -moz-appearance: textfield;
 }
 

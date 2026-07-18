@@ -37,7 +37,7 @@ export const VALID_FILE_FORMATS_BY_SOURCE = {
  * same computation as the DB's validate_generation_marks() function —
  * kept in sync deliberately, not generated from one source (see note
  * above). Used both to validate the requested config server-side and
- * to reconcile what Gemini actually returned.
+ * to reconcile what the AI engine actually returned.
  */
 export function computeTotalMarks(questionCounts) {
   return Object.entries(questionCounts || {}).reduce((sum, [code, count]) => {

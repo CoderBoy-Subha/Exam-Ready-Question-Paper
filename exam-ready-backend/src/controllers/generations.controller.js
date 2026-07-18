@@ -6,7 +6,7 @@ import {
   setGenerationOutput,
   getGenerationOutput,
 } from '../cache/redisClient.js'
-import { generatePaper } from '../services/gemini.service.js'
+import { generatePaper } from '../services/aiGeneration.service.js'
 import { buildExportMeta, renderPdfBuffer, renderDocxBuffer } from '../services/paperExport.service.js'
 import { computeTotalMarks } from '../shared/questionCategories.js'
 import { env } from '../config/env.js'
@@ -101,6 +101,26 @@ export async function createGenerationHandler(req, res) {
     await generationsRepo.markFailed(generationId, err.message)
     throw err
   }
+}
+
+export async function getGenerationHandler(req, res) {
+  const { id } = req.params
+
+  const paper = await getGenerationOutput(id)
+  if (!paper) {
+    throw AppError.gone('This paper is no longer available. It may have expired — try regenerating it.')
+  }
+
+  const generation = await generationsRepo.findById(id)
+  const exportMeta = buildExportMeta(paper, { difficulty: generation?.difficulty || 'mixture' })
+
+  res.json({
+    generationId: id,
+    totalMarks: exportMeta.totalMarks,
+    questionCount: exportMeta.questionCount,
+    difficulty: exportMeta.difficulty,
+    sections: paper.sections,
+  })
 }
 
 export async function downloadGenerationHandler(req, res) {

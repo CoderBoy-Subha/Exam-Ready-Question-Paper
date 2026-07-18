@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { generatePaper, _internal } from '../../src/services/gemini.service.js'
+import { generatePaper, _internal } from '../../src/services/aiGeneration.service.js'
 
 const baseConfig = {
   questionCounts: { MCQ_1: 2, SUB_5: 1 },
@@ -56,6 +56,27 @@ describe('_internal.buildPromptText', () => {
   })
 })
 
+describe('_internal.buildContentParts', () => {
+  it('builds one text Part per text source and one inlineData Part per file source', () => {
+    const extractedContent = {
+      payload: {
+        parts: [
+          { kind: 'text', text: 'Chapter 1 notes', sourceName: 'notes.docx' },
+          { kind: 'inline', mimeType: 'application/pdf', base64: 'AAAA', sourceName: 'chapter2.pdf' },
+          { kind: 'inline', mimeType: 'image/png', base64: 'BBBB', sourceName: 'diagram.png' },
+        ],
+      },
+    }
+    const contents = _internal.buildContentParts({ extractedContent, promptText: 'PROMPT' })
+    const parts = contents[0].parts
+
+    expect(parts[0]).toEqual({ text: 'PROMPT' })
+    expect(parts.some((p) => p.text?.includes('notes.docx') && p.text.includes('Chapter 1 notes'))).toBe(true)
+    expect(parts.filter((p) => p.inlineData)).toHaveLength(2)
+    expect(parts.find((p) => p.inlineData?.mimeType === 'application/pdf').inlineData.data).toBe('AAAA')
+  })
+})
+
 describe('_internal.marksReconcile', () => {
   it('passes when totals and counts match exactly', () => {
     const result = _internal.marksReconcile({ sections: goodSections }, baseConfig)
@@ -72,11 +93,16 @@ describe('_internal.marksReconcile', () => {
   })
 })
 
+const singleTextSource = {
+  fileFormat: 'text',
+  payload: { parts: [{ kind: 'text', text: 'source material', sourceName: 'pasted text' }] },
+}
+
 describe('generatePaper', () => {
   it('returns a paper with stable injected ids on first-try success', async () => {
     const client = { models: { generateContent: vi.fn().mockResolvedValue(fakeResponse(goodSections)) } }
     const { paper, meta } = await generatePaper({
-      extractedContent: { fileFormat: 'text', payload: { kind: 'text', text: 'source material' } },
+      extractedContent: singleTextSource,
       config: baseConfig,
       client,
     })
@@ -86,16 +112,23 @@ describe('generatePaper', () => {
     expect(meta.ok).toBe(true)
   })
 
-  it('sends inline PDF/image data as a Part alongside the prompt text', async () => {
+  it('sends every uploaded source as its own Part alongside the prompt text', async () => {
     const client = { models: { generateContent: vi.fn().mockResolvedValue(fakeResponse(goodSections)) } }
-    await generatePaper({
-      extractedContent: { fileFormat: 'pdf', payload: { kind: 'inline', mimeType: 'application/pdf', base64: 'ZmFrZQ==' } },
-      config: baseConfig,
-      client,
-    })
+    const multiSource = {
+      fileFormat: 'mixed',
+      payload: {
+        parts: [
+          { kind: 'inline', mimeType: 'application/pdf', base64: 'ZmFrZQ==', sourceName: 'a.pdf' },
+          { kind: 'inline', mimeType: 'image/png', base64: 'ZmFrZTI=', sourceName: 'b.png' },
+          { kind: 'text', text: 'extra notes', sourceName: 'c.docx' },
+        ],
+      },
+    }
+    await generatePaper({ extractedContent: multiSource, config: baseConfig, client })
     const callArgs = client.models.generateContent.mock.calls[0][0]
     const parts = callArgs.contents[0].parts
-    expect(parts.some((p) => p.inlineData?.mimeType === 'application/pdf')).toBe(true)
+    expect(parts.filter((p) => p.inlineData)).toHaveLength(2)
+    expect(parts.some((p) => p.text?.includes('c.docx'))).toBe(true)
     expect(callArgs.config.responseMimeType).toBe('application/json')
   })
 
@@ -106,17 +139,10 @@ describe('generatePaper', () => {
       .mockResolvedValueOnce(fakeResponse(goodSections))
     const client = { models: { generateContent } }
 
-    const { paper } = await generatePaper({
-      extractedContent: { fileFormat: 'text', payload: { kind: 'text', text: 'source' } },
-      config: baseConfig,
-      client,
-    })
+    const { paper } = await generatePaper({ extractedContent: singleTextSource, config: baseConfig, client })
 
     expect(generateContent).toHaveBeenCalledTimes(2)
     expect(paper.sections[0].questions).toHaveLength(3)
-    // the corrective retry prompt should call out the specific mismatch —
-    // check across all text parts, since buildContentParts unshifts the
-    // source-material text ahead of the prompt text for text-based content.
     const retryText = generateContent.mock.calls[1][0].contents[0].parts
       .map((p) => p.text)
       .filter(Boolean)
@@ -124,39 +150,37 @@ describe('generatePaper', () => {
     expect(retryText).toMatch(/1 questions totalling 1 marks/)
   })
 
-  it('throws a clear error if the retry also misses the mark scheme', async () => {
+  it('throws a clear, vendor-neutral error if the retry also misses the mark scheme', async () => {
     const client = { models: { generateContent: vi.fn().mockResolvedValue(fakeResponse(shortSections)) } }
 
     await expect(
-      generatePaper({
-        extractedContent: { fileFormat: 'text', payload: { kind: 'text', text: 'source' } },
-        config: baseConfig,
-        client,
-      }),
-    ).rejects.toThrow(/could not produce a paper/i)
+      generatePaper({ extractedContent: singleTextSource, config: baseConfig, client }),
+    ).rejects.toThrow(/AI engine could not produce a paper/i)
   })
 
-  it('throws a clear error when Gemini returns non-JSON text', async () => {
+  it('throws a clear, vendor-neutral error when the response is not valid JSON', async () => {
     const client = { models: { generateContent: vi.fn().mockResolvedValue({ text: 'not json at all' }) } }
     await expect(
-      generatePaper({
-        extractedContent: { fileFormat: 'text', payload: { kind: 'text', text: 'source' } },
-        config: baseConfig,
-        client,
-      }),
-    ).rejects.toThrow(/not valid JSON/)
+      generatePaper({ extractedContent: singleTextSource, config: baseConfig, client }),
+    ).rejects.toThrow(/AI engine returned a response that was not valid JSON/)
   })
 
-  it('throws a clear error when the response is empty (e.g. safety block)', async () => {
+  it('throws a clear, vendor-neutral error when the response is empty (e.g. safety block)', async () => {
     const client = {
       models: { generateContent: vi.fn().mockResolvedValue({ text: '', promptFeedback: { blockReason: 'SAFETY' } }) },
     }
     await expect(
-      generatePaper({
-        extractedContent: { fileFormat: 'text', payload: { kind: 'text', text: 'source' } },
-        config: baseConfig,
-        client,
-      }),
-    ).rejects.toThrow(/SAFETY/)
+      generatePaper({ extractedContent: singleTextSource, config: baseConfig, client }),
+    ).rejects.toThrow(/AI engine declined.*SAFETY/)
+  })
+
+  it('never mentions the underlying provider name in any thrown error', async () => {
+    const client = { models: { generateContent: vi.fn().mockResolvedValue(fakeResponse(shortSections)) } }
+    try {
+      await generatePaper({ extractedContent: singleTextSource, config: baseConfig, client })
+      throw new Error('expected generatePaper to throw')
+    } catch (err) {
+      expect(err.message).not.toMatch(/gemini/i)
+    }
   })
 })

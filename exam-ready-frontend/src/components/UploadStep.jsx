@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import {
   setContentSource,
   setSyllabusText,
@@ -13,42 +14,49 @@ import styles from './UploadStep.module.css'
 
 const ACCEPTED_MATERIAL = '.pdf,.doc,.docx,image/*'
 const ACCEPTED_SYLLABUS = '.pdf,.doc,.docx,image/*,text/plain'
+const MAX_FILES = 6
 
-export default function UploadStep({ onContinue }) {
+export default function UploadStep() {
   const dispatch = useDispatch()
-  const { contentSource, file, syllabusText, status, error } = useSelector((s) => s.upload)
+  const navigate = useNavigate()
+  const { contentSource, syllabusText, status, error } = useSelector((s) => s.upload)
   const [isDragging, setDragging] = useState(false)
-  const [pendingFile, setPendingFile] = useState(null) // real File object — kept out of Redux
+  const [pendingFiles, setPendingFiles] = useState([]) // real File objects — kept out of Redux
   const inputRef = useRef(null)
 
   const chooseSource = (source) => {
     dispatch(setContentSource(source))
-    setPendingFile(null)
+    setPendingFiles([])
   }
 
-  const handleFiles = useCallback((fileList) => {
-    const picked = fileList?.[0]
-    if (!picked) return
-    setPendingFile(picked)
+  const addFiles = useCallback((fileList) => {
+    const incoming = Array.from(fileList || [])
+    if (!incoming.length) return
+    setPendingFiles((prev) => {
+      const merged = [...prev, ...incoming].slice(0, MAX_FILES)
+      return merged
+    })
   }, [])
+
+  const removeFile = (index) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index))
+  }
 
   const handleContinue = async () => {
     dispatch(uploadStarted())
     try {
       const result = await uploadSource({
         contentSource,
-        file: pendingFile,
+        files: pendingFiles,
         syllabusText: contentSource === 'syllabus' ? syllabusText : undefined,
       })
       dispatch(
         uploadSucceeded({
           sessionId: result.sessionId,
-          file: pendingFile
-            ? { name: pendingFile.name, size: pendingFile.size, type: pendingFile.type }
-            : null,
+          files: pendingFiles.map((f) => ({ name: f.name, size: f.size, type: f.type })),
         }),
       )
-      onContinue()
+      navigate('/configure')
     } catch (err) {
       dispatch(uploadFailed(err.message))
     }
@@ -56,18 +64,17 @@ export default function UploadStep({ onContinue }) {
 
   const canContinue =
     contentSource === 'syllabus'
-      ? Boolean(syllabusText.trim()) || Boolean(pendingFile)
-      : Boolean(pendingFile)
-
-  const displayFile = pendingFile ? { name: pendingFile.name, size: pendingFile.size } : file
+      ? Boolean(syllabusText.trim()) || pendingFiles.length > 0
+      : pendingFiles.length > 0
+  const atLimit = pendingFiles.length >= MAX_FILES
 
   return (
     <div className={styles.step}>
       <div className={styles.stepHead}>
         <h2>What are we building this from?</h2>
         <p className={styles.stepSub}>
-          Upload study material, or hand over a syllabus — we&rsquo;ll pull the paper straight
-          out of it.
+          Upload one or more files of study material, or hand over a syllabus — we&rsquo;ll pull the
+          paper straight out of it.
         </p>
       </div>
 
@@ -93,42 +100,58 @@ export default function UploadStep({ onContinue }) {
       </div>
 
       <div
-        className={`${styles.dropzone} ${isDragging ? styles.dropzoneActive : ''}`}
+        className={`${styles.dropzone} ${isDragging ? styles.dropzoneActive : ''} ${atLimit ? styles.dropzoneDisabled : ''}`}
         onDragOver={(e) => {
           e.preventDefault()
-          setDragging(true)
+          if (!atLimit) setDragging(true)
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => {
           e.preventDefault()
           setDragging(false)
-          handleFiles(e.dataTransfer.files)
+          if (!atLimit) addFiles(e.dataTransfer.files)
         }}
-        onClick={() => inputRef.current?.click()}
+        onClick={() => !atLimit && inputRef.current?.click()}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()}
+        onKeyDown={(e) => e.key === 'Enter' && !atLimit && inputRef.current?.click()}
       >
         <input
           ref={inputRef}
           type="file"
           hidden
+          multiple
           accept={contentSource === 'syllabus' ? ACCEPTED_SYLLABUS : ACCEPTED_MATERIAL}
-          onChange={(e) => handleFiles(e.target.files)}
+          onChange={(e) => {
+            addFiles(e.target.files)
+            e.target.value = ''
+          }}
         />
         <span className={styles.dropIcon} aria-hidden="true" />
-        {displayFile ? (
-          <div className={styles.fileChip}>
-            <strong>{displayFile.name}</strong>
-            <span>{Math.round(displayFile.size / 1024)} KB</span>
-          </div>
-        ) : (
-          <>
-            <p className={styles.dropText}>Drop a file here, or click to browse</p>
-            <p className={styles.dropHint}>PDF, Word, or image</p>
-          </>
-        )}
+        <p className={styles.dropText}>
+          {atLimit ? `Maximum ${MAX_FILES} files reached` : 'Drop files here, or click to browse'}
+        </p>
+        <p className={styles.dropHint}>PDF, Word, or image — up to {MAX_FILES} files</p>
       </div>
+
+      {pendingFiles.length > 0 && (
+        <ul className={styles.fileList}>
+          {pendingFiles.map((file, i) => (
+            <li key={`${file.name}-${i}`} className={styles.fileChip}>
+              <span className={styles.fileChipName}>{file.name}</span>
+              <span className={styles.fileChipSize}>{Math.round(file.size / 1024)} KB</span>
+              <button
+                type="button"
+                className={styles.fileChipRemove}
+                onClick={() => removeFile(i)}
+                aria-label={`Remove ${file.name}`}
+              >
+                &times;
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {contentSource === 'syllabus' && (
         <>

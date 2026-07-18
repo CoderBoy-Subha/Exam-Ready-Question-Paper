@@ -12,7 +12,11 @@ import {
   cleanupBodySchema,
 } from '../validation/schemas.js'
 import { uploadHandler } from '../controllers/upload.controller.js'
-import { createGenerationHandler, downloadGenerationHandler } from '../controllers/generations.controller.js'
+import {
+  createGenerationHandler,
+  downloadGenerationHandler,
+  getGenerationHandler,
+} from '../controllers/generations.controller.js'
 import { submitRatingHandler } from '../controllers/ratings.controller.js'
 import { cleanupHandler } from '../controllers/cleanup.controller.js'
 import { env } from '../config/env.js'
@@ -28,7 +32,7 @@ const ALLOWED_MIMETYPES = [
 
 const upload = multer({
   storage: multer.memoryStorage(), // buffer only, in-process, never written to disk
-  limits: { fileSize: env.uploadMaxFileSizeMb * 1024 * 1024 },
+  limits: { fileSize: env.uploadMaxFileSizeMb * 1024 * 1024, files: env.uploadMaxFiles },
   fileFilter(req, file, cb) {
     if (!ALLOWED_MIMETYPES.includes(file.mimetype)) {
       return cb(new Error(`Unsupported file type: ${file.mimetype}`))
@@ -37,16 +41,19 @@ const upload = multer({
   },
 })
 
-// multer reports errors (bad mimetype, file too large) via a callback
-// rather than a rejected promise, so asyncHandler can't catch them.
-// This wrapper normalizes both into a proper AppError.
+// multer reports errors (bad mimetype, file too large, too many files)
+// via a callback rather than a rejected promise, so asyncHandler can't
+// catch them. This wrapper normalizes both into a proper AppError.
 function handleUpload(fieldName) {
-  const middleware = upload.single(fieldName)
+  const middleware = upload.array(fieldName, env.uploadMaxFiles)
   return (req, res, next) => {
     middleware(req, res, (err) => {
       if (!err) return next()
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return next(AppError.badRequest(`File exceeds the ${env.uploadMaxFileSizeMb}MB limit.`))
+        return next(AppError.badRequest(`A file exceeds the ${env.uploadMaxFileSizeMb}MB limit.`))
+      }
+      if (err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return next(AppError.badRequest(`You can upload at most ${env.uploadMaxFiles} files at once.`))
       }
       next(AppError.badRequest(err.message || 'Upload failed.'))
     })
@@ -59,7 +66,7 @@ router.get('/health', (req, res) => res.json({ ok: true }))
 
 router.post(
   '/upload',
-  handleUpload('file'),
+  handleUpload('files'),
   validateBody(uploadBodySchema),
   requireTurnstile(),
   asyncHandler(uploadHandler),
@@ -73,6 +80,8 @@ router.post(
 )
 
 router.get('/generations/:id/download', asyncHandler(downloadGenerationHandler))
+
+router.get('/generations/:id', asyncHandler(getGenerationHandler))
 
 router.post(
   '/generations/:id/ratings',

@@ -8,10 +8,10 @@
   position: relative;
   height: 22px;
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(15, 76, 92, 0.07), rgba(15, 76, 92, 0.03));
-  border: 1px solid rgba(15, 76, 92, 0.12);
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
   overflow: visible;
-  box-shadow: inset 0 2px 5px rgba(15, 76, 92, 0.12);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.25);
 }
 
 .fill {
@@ -19,18 +19,18 @@
   inset: 0;
   width: 0%;
   border-radius: 999px 0 0 999px;
-  background: linear-gradient(180deg, #7fd4de 0%, var(--tide) 100%);
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
   overflow: hidden;
   transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1), background 0.4s ease;
 }
 
 .track.exact .fill {
   border-radius: 999px;
-  background: linear-gradient(180deg, #7fe0c4 0%, #1b8c6f 100%);
+  background: linear-gradient(90deg, var(--accent) 0%, var(--success) 100%);
 }
 
 .track.over .fill {
-  background: linear-gradient(180deg, #f3b3a3 0%, var(--coral-warn) 100%);
+  background: linear-gradient(90deg, var(--accent3) 0%, var(--warn) 100%);
 }
 
 .meniscus {
@@ -39,7 +39,7 @@
   right: -1px;
   width: 10px;
   height: calc(100% + 6px);
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.5);
   border-radius: 50%;
   filter: blur(1px);
 }
@@ -51,7 +51,7 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.85);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -65,7 +65,7 @@
   top: -5px;
   bottom: -5px;
   width: 2px;
-  background: var(--current);
+  background: var(--text);
   transform: translateX(-1px);
 }
 
@@ -76,13 +76,13 @@
   width: 6px;
   height: 6px;
   transform: translateX(-50%) rotate(45deg);
-  background: var(--current);
+  background: var(--text);
 }
 
 .exactRipple {
   position: absolute;
   inset: -14px;
-  border: 1.5px solid rgba(27, 140, 111, 0.55);
+  border: 1.5px solid rgba(52, 211, 153, 0.55);
   border-radius: 999px;
   pointer-events: none;
 }
@@ -97,26 +97,27 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  font-family: var(--font-mono);
 }
 
 .readoutNumbers {
   font-size: 18px;
-  color: var(--current);
+  color: var(--text);
   font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
 .readoutDivider {
   margin: 0 4px;
-  color: var(--ink-soft);
+  color: var(--text-dim);
+  font-weight: 400;
 }
 
 .overNumber {
-  color: var(--coral-warn);
+  color: var(--warn);
 }
 
 .readoutHint {
   font-size: 12px;
-  color: var(--ink-soft);
+  color: var(--text-dim);
   letter-spacing: 0.01em;
 }

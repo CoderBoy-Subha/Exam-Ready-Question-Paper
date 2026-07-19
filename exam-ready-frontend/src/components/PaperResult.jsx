@@ -37,7 +37,6 @@ export default function PaperResult() {
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlGenerationId])
 
   const handleRegenerate = async () => {
@@ -153,7 +152,9 @@ export default function PaperResult() {
 
       <RatingWidget generationId={urlGenerationId} />
 
-      <SectionPreviewModal section={activeSection} onClose={() => setActiveSection(null)} />
+      {activeSection && (
+        <SectionPreviewModal section={activeSection} onClose={() => setActiveSection(null)} />
+      )}
     </div>
   )
 }

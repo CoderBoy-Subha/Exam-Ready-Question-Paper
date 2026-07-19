@@ -13,7 +13,7 @@ export default function SectionPreviewModal({ section, onClose }) {
     }
     document.addEventListener('keydown', handleKeyDown)
     const previousOverflow = document.body.style.overflow
-    //document.body.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = previousOverflow

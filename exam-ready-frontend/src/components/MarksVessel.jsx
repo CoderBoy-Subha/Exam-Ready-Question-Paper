@@ -3,10 +3,6 @@ import { useSelector } from 'react-redux'
 import { QUESTION_CATEGORIES } from '../utils/questionCategories.js'
 import styles from './MarksVessel.module.css'
 
-// The functional heart of the config step: marks must add up exactly
-// to the target, so it's rendered as liquid finding its level rather
-// than a generic progress bar. Exact match settles with a ripple;
-// overshoot tints warm as a warning.
 export default function MarksVessel() {
   const questionCounts = useSelector((s) => s.config.questionCounts)
   const targetMarks = useSelector((s) => s.config.targetMarks)

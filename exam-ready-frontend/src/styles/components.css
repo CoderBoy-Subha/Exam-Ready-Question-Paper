@@ -1,7 +1,3 @@
-/* Shared styles for small components that don't need their own CSS module:
-   StepIndicator, DifficultySelector, ConsentNotice. */
-
-/* StepIndicator — pill nav container matching the reference app's tabs */
 .stepList {
   display: flex;
   align-items: center;

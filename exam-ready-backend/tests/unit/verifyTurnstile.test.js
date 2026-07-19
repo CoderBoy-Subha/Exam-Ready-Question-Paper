@@ -2,9 +2,6 @@ import { describe, it, expect, vi } from 'vitest'
 import { env } from '../../src/config/env.js'
 import { verifyTurnstileToken } from '../../src/middleware/verifyTurnstile.js'
 
-// env.turnstileDisabled is true in the test .env (so integration tests
-// don't need to fake Cloudflare); flip it locally per-test to exercise
-// the real verification logic, then restore it.
 function withTurnstileEnabled(fn) {
   return async () => {
     const original = env.turnstileDisabled

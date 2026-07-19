@@ -2,9 +2,6 @@ import { useCallback, useRef, useState } from 'react'
 
 let rippleId = 0
 
-// Tracks click-position-anchored ripples for RippleButton. Kept as a
-// hook (rather than baked into the button) so any future glass surface
-// that wants the same click feedback can reuse it.
 export function useRipple() {
   const [ripples, setRipples] = useState([])
   const containerRef = useRef(null)

@@ -1,14 +1,6 @@
 import { createClient } from 'redis'
 import { env } from '../config/env.js'
 
-// This is where the actual uploaded/extracted content and generated
-// papers live — deliberately NOT in Postgres. See schema.sql's header
-// comment and the DB design doc: Postgres has backups/WAL, so a
-// DELETE there doesn't mean "gone" the way the retention requirement
-// implies. Redis with a TTL does — the key just evaporates, which is
-// what makes the inactivity timeout a true backstop rather than
-// something a cron job has to race.
-
 export const redisClient = createClient({ url: env.redisUrl })
 
 redisClient.on('error', (err) => {

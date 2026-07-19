@@ -21,8 +21,6 @@ function optionalBool(name, fallback) {
   return raw.toLowerCase() === 'true'
 }
 
-// Fails fast on boot if something essential is missing, rather than
-// limping along and throwing a confusing error on the first request.
 export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: optionalInt('PORT', 4000),

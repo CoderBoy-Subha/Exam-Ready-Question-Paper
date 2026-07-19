@@ -1,23 +1,11 @@
 import PDFDocument from 'pdfkit'
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx'
 
-// PDF via pdfkit and Word via `docx` — both pure-JS, no headless
-// browser dependency. Puppeteer would give nicer typographic control
-// via HTML/CSS, but it downloads a full Chromium at install time,
-// which is a heavier and slower deploy footprint (and wasn't
-// installable in this sandbox's restricted network, which is exactly
-// the kind of environment constraint worth taking seriously — smaller
-// hosts and CI runners hit the same issue). If richer layout is
-// wanted later, swap this file only; nothing else depends on the
-// choice.
-
 function letterFor(index) {
   return String.fromCharCode(97 + index) // a, b, c, d...
 }
 
-// ---------------------------------------------------------------------
 // PDF (pdfkit)
-// ---------------------------------------------------------------------
 export function renderPdfBuffer(paper, meta) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50 })
@@ -69,9 +57,7 @@ export function renderPdfBuffer(paper, meta) {
   })
 }
 
-// ---------------------------------------------------------------------
 // Word (docx)
-// ---------------------------------------------------------------------
 export async function renderDocxBuffer(paper, meta) {
   const children = [
     new Paragraph({ text: 'Exam Paper', heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }),

@@ -1,7 +1,3 @@
-// A thrown AppError carries an intentional HTTP status + a message
-// that's safe to send to the client. Anything else thrown (a bug, a
-// driver error) is treated as a 500 and its details are logged but
-// never leaked to the response — see middleware/errorHandler.js.
 export class AppError extends Error {
   constructor(statusCode, message, details) {
     super(message)

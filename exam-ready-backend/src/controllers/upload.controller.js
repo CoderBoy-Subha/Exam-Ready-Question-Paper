@@ -13,12 +13,6 @@ export async function uploadHandler(req, res) {
     throw AppError.badRequest('Upload at least one file, or paste syllabus text.')
   }
 
-  // Validate each file individually against what this content source
-  // allows, before extraction — a clearer error than letting a bad
-  // file surface only after mammoth/base64 work has already run. The
-  // combined "mixed" summary format (assigned below by
-  // extractContent) is always fine once every individual file passes
-  // this check.
   for (const file of files) {
     let format
     try {

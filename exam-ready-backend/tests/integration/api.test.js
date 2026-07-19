@@ -15,8 +15,6 @@ const { sessionsRepo, generationsRepo } = await import('../../src/db/repositorie
 
 let app
 
-// Distinct fake IPs per describe block so parallel/adjacent tests
-// never collide on the same visitors row.
 const HAPPY_PATH_IP = '198.51.100.10'
 const VALIDATION_IP = '198.51.100.20'
 const RATE_LIMIT_IP = '198.51.100.30'

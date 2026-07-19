@@ -1,0 +1,165 @@
+.carousel {
+  position: relative;
+  width: 100%;
+  padding: 18px;
+}
+
+.viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--field-bg);
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateX(16px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  pointer-events: none;
+}
+
+.slideActive {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.slideImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--field-bg);
+  user-select: none;
+}
+
+.caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 22px 18px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.6) 0%, transparent 100%);
+  text-align: left;
+}
+
+.ctaSlide {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  padding: 20px;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(126, 232, 250, 0.18), transparent 55%),
+    radial-gradient(circle at 75% 80%, rgba(167, 139, 250, 0.20), transparent 55%);
+}
+
+.ctaDiamond {
+  width: 16px;
+  height: 16px;
+  transform: rotate(45deg);
+  border-radius: 4px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  margin-bottom: 6px;
+}
+
+.ctaSlide h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 26px;
+  margin: 0;
+}
+
+.ctaSlide p {
+  margin: 0 0 6px;
+  color: var(--text-dim);
+  font-size: 13.5px;
+  max-width: 36ch;
+}
+
+.navBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, opacity 0.2s ease;
+  z-index: 2;
+}
+
+.navBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.navBtn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.navPrev {
+  left: 14px;
+}
+
+.navNext {
+  right: 14px;
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.25s ease, width 0.25s ease;
+}
+
+.dotActive {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  width: 22px;
+  border-radius: 999px;
+}
+
+@media (max-width: 560px) {
+  .navBtn {
+    display: none;
+  }
+  .caption {
+    font-size: 12px;
+  }
+  .ctaSlide h3 {
+    font-size: 21px;
+  }
+}

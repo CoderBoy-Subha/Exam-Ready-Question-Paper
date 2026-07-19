@@ -1,9 +1,6 @@
 import { useRipple } from '../hooks/useRipple.js'
 import styles from './RippleButton.module.css'
 
-// Signature interaction for the app: a click spawns a ring anchored at
-// the exact pointer position, like a drop hitting the glass surface —
-// not a generic Material-style solid-fill ripple.
 export default function RippleButton({
   children,
   onClick,

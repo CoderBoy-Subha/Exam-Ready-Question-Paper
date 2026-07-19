@@ -1,10 +1,5 @@
 import { query } from './pool.js'
 
-// ---------------------------------------------------------------------
-// visitors — one row per IP, upserted on each request (see
-// middleware/visitorTracking.js). Never purged automatically; see
-// DESIGN.md from the schema deliverable for the retention flag.
-// ---------------------------------------------------------------------
 export const visitorsRepo = {
   async upsert(ipAddress, userAgent) {
     const { rows } = await query(
@@ -21,12 +16,6 @@ export const visitorsRepo = {
   },
 }
 
-// ---------------------------------------------------------------------
-// sessions — the lifecycle anchor for one upload. Content itself
-// lives in Redis (cache/redisClient.js); this table only tracks
-// activity + expiry so the purge job and cleanup endpoint know what
-// to clear.
-// ---------------------------------------------------------------------
 export const sessionsRepo = {
   async create({ visitorId, ttlMinutes }) {
     const { rows } = await query(
@@ -80,11 +69,7 @@ export const sessionsRepo = {
   },
 }
 
-// ---------------------------------------------------------------------
-// generations — metadata only (see schema.sql's header comment: no
-// file bytes, extracted text, or generated paper text ever land
-// here — that's Redis's job).
-// ---------------------------------------------------------------------
+// generations — metadata only
 export const generationsRepo = {
   async create({
     sessionId,
@@ -185,11 +170,7 @@ export const generationsRepo = {
   },
 }
 
-// ---------------------------------------------------------------------
-// ratings — one per generation; upserted so a re-rate edits in place
-// (matches the UNIQUE(generation_id) constraint + trg_ratings_updated_at
-// trigger in schema.sql).
-// ---------------------------------------------------------------------
+// ratings — one per generation
 export const ratingsRepo = {
   async upsert({ generationId, score, comment, email }) {
     const { rows } = await query(
@@ -204,11 +185,6 @@ export const ratingsRepo = {
   },
 }
 
-// ---------------------------------------------------------------------
-// stats — public, aggregate, read-only counts for the footer. No PII,
-// safe to expose unauthenticated. Cached in Redis (services/stats.service.js)
-// since exact real-time precision doesn't matter here but query load does.
-// ---------------------------------------------------------------------
 export const statsRepo = {
   async getPublicStats() {
     const { rows } = await query(
@@ -228,11 +204,6 @@ export const statsRepo = {
   },
 }
 
-// ---------------------------------------------------------------------
-// purge — thin wrapper around the DB's own purge_expired_sessions()
-// function (defined in schema.sql). See services/purge.service.js for
-// how the returned ids get used to clear Redis.
-// ---------------------------------------------------------------------
 export const purgeRepo = {
   async purgeExpiredSessions() {
     // purge_expired_sessions() RETURNS SETOF UUID (a scalar, not a

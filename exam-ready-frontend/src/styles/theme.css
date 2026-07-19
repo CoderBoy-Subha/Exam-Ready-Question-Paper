@@ -1,6 +1,4 @@
 :root {
-  /* Palette extracted directly from the reference app's CSS (app.py) —
-     see README.md "Theme" section for the source values. */
   --glass-bg: rgba(255, 255, 255, 0.12);
   --glass-bg-strong: rgba(255, 255, 255, 0.18);
   --glass-border: rgba(255, 255, 255, 0.30);
@@ -21,8 +19,6 @@
   --text-dim: rgba(255, 255, 255, 0.55);
   --text-faint: rgba(255, 255, 255, 0.38);
 
-  /* on-gradient text (buttons use a light cyan->purple fill, so their
-     label needs a dark tone rather than --text) */
   --on-accent: #0a0a1a;
 
   --bg-base: #060612;

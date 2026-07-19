@@ -1,6 +1,3 @@
-// Mirrors the `question_categories` seed data in the backend schema —
-// same codes (MCQ_1, SUB_1..SUB_20) so config payloads line up with the
-// database's generation_question_selections rows one-to-one.
 export const QUESTION_CATEGORIES = [
   { code: 'MCQ_1', kind: 'mcq', marks: 1, label: 'MCQ' },
   { code: 'SUB_1', kind: 'subjective', marks: 1, label: 'Short Answer' },

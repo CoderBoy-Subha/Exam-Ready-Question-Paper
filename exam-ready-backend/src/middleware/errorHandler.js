@@ -1,5 +1,3 @@
-// Wraps an async route/middleware fn so a rejected promise reaches
-// Express's error pipeline instead of becoming an unhandled rejection.
 export function asyncHandler(fn) {
   return function wrapped(req, res, next) {
     Promise.resolve(fn(req, res, next)).catch(next)
@@ -10,10 +8,6 @@ export function notFoundHandler(req, res) {
   res.status(404).json({ message: `No route for ${req.method} ${req.originalUrl}` })
 }
 
-// Central error formatter. AppError carries a status + a message
-// that's already safe to show the client. Anything else (a bug, a
-// driver error) is logged with full detail server-side but collapses
-// to a generic 500 in the response — never leak internals.
 export function errorHandler(err, req, res, _next) {
   if (err.name === 'AppError') {
     if (err.statusCode >= 500) console.error(err)

@@ -42,9 +42,6 @@ const upload = multer({
   },
 })
 
-// multer reports errors (bad mimetype, file too large, too many files)
-// via a callback rather than a rejected promise, so asyncHandler can't
-// catch them. This wrapper normalizes both into a proper AppError.
 function handleUpload(fieldName) {
   const middleware = upload.array(fieldName, env.uploadMaxFiles)
   return (req, res, next) => {

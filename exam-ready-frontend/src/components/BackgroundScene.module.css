@@ -6,8 +6,6 @@
   background: var(--bg-base);
 }
 
-/* Four radial blooms over a near-black base, exactly matching the
-   reference app's .bg recipe, with a slow hue/brightness drift. */
 .nebula {
   position: absolute;
   inset: -10%;

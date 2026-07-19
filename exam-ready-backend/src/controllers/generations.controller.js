@@ -32,19 +32,13 @@ export async function createGenerationHandler(req, res) {
     throw AppError.gone('Your uploaded content has expired. Please upload again.')
   }
 
-  // Server-side re-check of the marks cap. The frontend already gates
-  // this (MarksVessel / the Generate button), so hitting this in
-  // normal use means the client was bypassed — reject rather than
-  // silently "adjust", since guessing a correction the user didn't
-  // ask for is worse UX than a clear error asking them to fix counts.
-  const computedTotal = computeTotalMarks(questionCounts)
+    const computedTotal = computeTotalMarks(questionCounts)
   if (computedTotal !== targetTotalMarks) {
     throw AppError.badRequest(
       `Question counts sum to ${computedTotal} marks but the target is ${targetTotalMarks}. Adjust counts to match exactly.`,
     )
   }
 
-  // Sliding-window renewal — a generate action counts as activity.
   await sessionsRepo.touch(sessionId, env.sessionTtlMinutes)
   await touchSessionContentTtl(sessionId)
 
@@ -71,8 +65,6 @@ export async function createGenerationHandler(req, res) {
   })
   await generationsRepo.insertSelections(generationId, questionCounts)
 
-  // Defense in depth: confirm via the DB's own validate_generation_marks()
-  // too, even though we just checked the same thing in JS above.
   const dbValid = await generationsRepo.validateMarks(generationId)
   if (!dbValid) {
     await generationsRepo.markFailed(generationId, 'Marks validation failed at persistence layer')

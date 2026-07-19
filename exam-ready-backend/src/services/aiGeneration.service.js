@@ -3,20 +3,6 @@ import { env } from '../config/env.js'
 import { AppError } from '../utils/AppError.js'
 import { CATEGORY_BY_CODE, computeTotalMarks } from '../shared/questionCategories.js'
 
-// ---------------------------------------------------------------------
-// Renamed from gemini.service.js: the provider name shouldn't leak
-// anywhere a user (or an attacker probing error messages / stack
-// traces) can see it — see every AppError message below, none of
-// which name the vendor. The env vars (GEMINI_API_KEY, GEMINI_MODEL)
-// keep their names since those are server-side config, never sent to
-// a client; renaming them would just be confusing for zero benefit.
-//
-// Structured JSON output via responseMimeType + responseJsonSchema —
-// see js-genai's own codegen_instructions.md, the current documented
-// pattern for @google/genai (NOT the deprecated @google/generative-ai
-// package's genAI.getGenerativeModel().generateContent() shape).
-// ---------------------------------------------------------------------
-
 const paperResponseSchema = {
   type: Type.OBJECT,
   properties: {
@@ -103,13 +89,6 @@ Difficulty: ${config.difficulty === 'mixture' ? 'Mixture — split roughly evenl
   return prompt
 }
 
-/**
- * extractedContent.payload.parts is the array produced by
- * fileExtraction.service.js — one entry per uploaded file / pasted
- * text block. Each 'text' part becomes a labeled text Part; each
- * 'inline' part (pdf/image) becomes an inlineData Part. Multiple
- * files just mean multiple Parts in the same request.
- */
 function buildContentParts({ extractedContent, promptText }) {
   const parts = [{ text: promptText }]
 
@@ -194,10 +173,7 @@ export async function generatePaper({ extractedContent, config, previousQuestion
   let reconciliation = marksReconcile(paper, config)
 
   if (!reconciliation.ok) {
-    // One corrective retry — the model occasionally drifts from an
-    // exact count/mark spec. Cost of one extra call is worth not
-    // shipping a paper that silently doesn't match what was configured.
-    const correctivePrompt = `${promptText}\n\nIMPORTANT: a previous attempt returned ${reconciliation.actualCount} questions totalling ${reconciliation.actualTotal} marks. You MUST return exactly ${reconciliation.expectedCount} questions totalling ${reconciliation.expectedTotal} marks — recheck the breakdown above and match it exactly.`
+        const correctivePrompt = `${promptText}\n\nIMPORTANT: a previous attempt returned ${reconciliation.actualCount} questions totalling ${reconciliation.actualTotal} marks. You MUST return exactly ${reconciliation.expectedCount} questions totalling ${reconciliation.expectedTotal} marks — recheck the breakdown above and match it exactly.`
     const retryContents = buildContentParts({ extractedContent, promptText: correctivePrompt })
     paper = await callGenerativeModel({ client: modelClient, contents: retryContents, systemInstruction: SYSTEM_INSTRUCTION })
     reconciliation = marksReconcile(paper, config)
@@ -213,6 +189,4 @@ export async function generatePaper({ extractedContent, config, previousQuestion
   return { paper, meta: { model: env.geminiModel, ...reconciliation } }
 }
 
-// Exposed for tests / callers that want the raw schema or prompt logic
-// without making a network call.
 export const _internal = { paperResponseSchema, buildPromptText, buildContentParts, marksReconcile }

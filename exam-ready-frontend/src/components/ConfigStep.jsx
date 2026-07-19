@@ -8,6 +8,7 @@ import QuestionCategoryGrid from './QuestionCategoryGrid.jsx'
 import MarksVessel from './MarksVessel.jsx'
 import DifficultySelector from './DifficultySelector.jsx'
 import RippleButton from './RippleButton.jsx'
+import GeneratingStatus from './GeneratingStatus.jsx'
 import styles from './ConfigStep.module.css'
 
 export default function ConfigStep() {
@@ -39,17 +40,7 @@ export default function ConfigStep() {
   }
 
   if (generationStatus === 'pending') {
-    return (
-      <div className={styles.pending}>
-        <div className={styles.pendingDrop} aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
-        <h2>Working through your material&hellip;</h2>
-        <p>Pulling questions from what you uploaded and balancing them to your mark scheme.</p>
-      </div>
-    )
+    return <GeneratingStatus title="Working through your material…" />
   }
 
   if (!sessionId) return null

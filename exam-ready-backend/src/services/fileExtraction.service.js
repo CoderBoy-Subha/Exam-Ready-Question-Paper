@@ -1,25 +1,5 @@
 import mammoth from 'mammoth'
 
-/**
- * Converts a set of raw uploads (multer memory-storage files, zero or
- * more) + optional pasted syllabus text into ONE normalized payload:
- *
- *   { parts: [
- *       { kind: 'text',   text, sourceName },
- *       { kind: 'inline', mimeType, base64, sourceName },
- *       ...
- *   ] }
- *
- * One entry per source (each uploaded file, plus pasted text if any),
- * regardless of how many there are — this is what lets a single
- * upload mix a PDF, two images, and a pasted paragraph without any
- * special-casing downstream. Each part keeps its own sourceName so
- * the AI prompt (aiGeneration.service.js) can label sources if useful.
- *
- * Never writes anything to disk — multer uses memory storage, and
- * buffers are only ever base64'd into the payload or handed to
- * mammoth in-memory.
- */
 export async function extractContent({ contentSource, files, syllabusText }) {
   const parts = []
   const formatsSeen = new Set()
@@ -42,8 +22,6 @@ export async function extractContent({ contentSource, files, syllabusText }) {
       continue
     }
 
-    // pdf or image: the AI engine processes these natively, so pass
-    // the bytes straight through as inline data.
     parts.push({
       kind: 'inline',
       mimeType: file.mimetype,

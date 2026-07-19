@@ -51,9 +51,6 @@ export const {
   resetConfig,
 } = configSlice.actions
 
-// Single source of truth for "current total marks" — used by both the
-// MarksVessel display and the generate-button gate, so they can never
-// disagree with each other.
 export const selectComputedTotal = (state) =>
   QUESTION_CATEGORIES.reduce(
     (sum, c) => sum + (state.config.questionCounts[c.code] || 0) * c.marks,

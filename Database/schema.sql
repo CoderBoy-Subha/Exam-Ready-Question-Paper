@@ -1,29 +1,3 @@
--- =====================================================================
--- Exam-Ready Question Paper Generator
--- Core database schema
--- Target engine : PostgreSQL 13+  (developed & tested on 16)
--- =====================================================================
---
--- KEY DESIGN PRINCIPLE
--- Postgres holds METADATA ONLY. Uploaded files, extracted text, and
--- generated question/answer content are never written to any table
--- here — see DESIGN.md for the recommended ephemeral store (Redis or
--- similar, TTL-keyed by session_id / generation_id). That is what
--- lets "purge" be a cheap, safe UPDATE instead of a risky DELETE.
---
--- TWO PURGE PATHS
---   1. Routine (inactivity timeout / sendBeacon): SOFT. Clears the
---      ephemeral payload and stamps purged_at. Rows here are kept,
---      so ratings and rate-limit history survive.
---   2. Erasure request (privacy / "delete my data"): HARD. A single
---      DELETE FROM visitors WHERE id = ... cascades through
---      sessions -> generations -> ratings /
---      generation_question_selections.
---
--- No extensions are required (gen_random_uuid() is built into core
--- Postgres since v13), so this runs on any vanilla managed instance.
--- =====================================================================
-
 BEGIN;
 
 -- ---------------------------------------------------------------------
@@ -37,9 +11,6 @@ CREATE TYPE question_kind_enum     AS ENUM ('mcq', 'subjective');
 
 -- ---------------------------------------------------------------------
 -- 2. visitors
--- One row per distinct IP, upserted on request. NOT part of the
--- session-content purge cycle — it never holds file content, only
--- traffic metadata. Decide your own retention window (see DESIGN.md).
 -- ---------------------------------------------------------------------
 CREATE TABLE visitors (
     id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -58,10 +29,6 @@ COMMENT ON TABLE visitors IS
 
 -- ---------------------------------------------------------------------
 -- 3. sessions
--- Anchors a "session-scoped" upload. The uploaded file and extracted
--- text live in the ephemeral store, NOT here — this row only tracks
--- the lifecycle (activity + expiry) so a sweep job knows when to
--- clear that ephemeral payload.
 -- ---------------------------------------------------------------------
 CREATE TABLE sessions (
     id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -83,9 +50,6 @@ COMMENT ON COLUMN sessions.purged_at IS
 
 -- ---------------------------------------------------------------------
 -- 4. question_categories (static reference data)
--- The fixed set of selectable (type, marks) combinations: MCQ at 1
--- mark, plus subjective at 1,2,3,4,5,6,8,10,15,20 marks — 11 rows,
--- seeded at the bottom of this file.
 -- ---------------------------------------------------------------------
 CREATE TABLE question_categories (
     code           TEXT PRIMARY KEY,
@@ -97,8 +61,6 @@ CREATE TABLE question_categories (
 
 -- ---------------------------------------------------------------------
 -- 5. generations
--- One row per Gemini call, including every "regenerate" (linked via
--- parent_generation_id). Config + status + timing METADATA only.
 -- ---------------------------------------------------------------------
 CREATE TABLE generations (
     id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -143,9 +105,6 @@ COMMENT ON COLUMN generations.parent_generation_id IS
 
 -- ---------------------------------------------------------------------
 -- 6. generation_question_selections
--- The per-category counts a user picked for one generation. Only
--- rows with count > 0 are stored (absence = 0). Marks-cap validation
--- is a straight SUM(count * marks) — see validate_generation_marks().
 -- ---------------------------------------------------------------------
 CREATE TABLE generation_question_selections (
     generation_id   UUID NOT NULL REFERENCES generations(id) ON DELETE CASCADE,
@@ -158,9 +117,6 @@ CREATE INDEX idx_gqs_category ON generation_question_selections (category_code);
 
 -- ---------------------------------------------------------------------
 -- 7. ratings
--- One rating per generation. Deliberately NOT purged on the routine
--- session-timeout path (see generations comment above) — only
--- removed via the cascading erasure path from visitors/sessions.
 -- ---------------------------------------------------------------------
 CREATE TABLE ratings (
     id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -196,8 +152,6 @@ FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ---------------------------------------------------------------------
 -- 9. Helper: validate a generation's marks cap
--- Advisory, not a hard trigger — the app decides reject vs. auto-
--- adjust, per the product's "reject/adjust on submit" requirement.
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION validate_generation_marks(p_generation_id UUID)
 RETURNS BOOLEAN AS $$
@@ -218,9 +172,6 @@ $$ LANGUAGE plpgsql;
 
 -- ---------------------------------------------------------------------
 -- 10. Helper: purge expired sessions
--- Call from a scheduled job every few minutes. Only stamps Postgres
--- rows — the caller must still delete the matching ephemeral payload
--- (Redis keys / temp files) for each returned session id.
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION purge_expired_sessions()
 RETURNS SETOF UUID AS $$

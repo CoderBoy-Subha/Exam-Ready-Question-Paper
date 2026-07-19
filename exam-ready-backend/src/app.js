@@ -9,10 +9,6 @@ import { router } from './routes/index.js'
 export function createApp() {
   const app = express()
 
-  // Correctly derive req.ip from X-Forwarded-For when sitting behind a
-  // reverse proxy — required for both visitor tracking and rate
-  // limiting to see the real client IP rather than the proxy's.
-  // Adjust TRUST_PROXY_HOPS to match your actual infra.
   app.set('trust proxy', env.trustProxyHops)
 
   app.use(helmet())

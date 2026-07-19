@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
@@ -10,6 +10,8 @@ import {
 import { generatePaper, getGeneration, getDownloadUrl } from '../api/client.js'
 import RippleButton from './RippleButton.jsx'
 import RatingWidget from './RatingWidget.jsx'
+import GeneratingStatus from './GeneratingStatus.jsx'
+import SectionPreviewModal from './SectionPreviewModal.jsx'
 import styles from './PaperResult.module.css'
 
 export default function PaperResult() {
@@ -19,11 +21,8 @@ export default function PaperResult() {
   const { status, error, paper, generationId } = useSelector((s) => s.generation)
   const sessionId = useSelector((s) => s.upload.sessionId)
   const config = useSelector((s) => s.config)
+  const [activeSection, setActiveSection] = useState(null)
 
-  // Landing directly on this URL (refresh, deep link, browser back/
-  // forward) — Redux may not hold this specific generation, or may
-  // hold a different (newer, regenerated) one. The URL is the source
-  // of truth: fetch fresh whenever it doesn't match what's in state.
   useEffect(() => {
     if (paper && generationId === urlGenerationId) return
     let cancelled = false
@@ -42,6 +41,7 @@ export default function PaperResult() {
   }, [urlGenerationId])
 
   const handleRegenerate = async () => {
+    setActiveSection(null)
     dispatch(startGeneration())
     try {
       const result = await generatePaper({
@@ -58,30 +58,11 @@ export default function PaperResult() {
   }
 
   if (status === 'loading') {
-    return (
-      <div className={styles.pending}>
-        <div className={styles.pendingDrop} aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
-        <h2>Loading your paper&hellip;</h2>
-      </div>
-    )
+    return <GeneratingStatus title="Loading your paper…" />
   }
 
   if (status === 'pending') {
-    return (
-      <div className={styles.pending}>
-        <div className={styles.pendingDrop} aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
-        <h2>Working through your material&hellip;</h2>
-        <p>Generating a fresh set of questions from the same configuration.</p>
-      </div>
-    )
+    return <GeneratingStatus title="Regenerating your paper…" />
   }
 
   if (status === 'failed') {
@@ -90,9 +71,14 @@ export default function PaperResult() {
         <h2>That didn&rsquo;t work cleanly</h2>
         <p>{error || 'Something interrupted the request.'}</p>
         <div className={styles.actions}>
-          <RippleButton variant="ghost" onClick={() => navigate('/configure')}>
-            Back to configure
-          </RippleButton>
+          <div className={styles.actionsLeft}>
+            <RippleButton variant="ghost" onClick={() => navigate('/configure')}>
+              Back to configure
+            </RippleButton>
+            <RippleButton variant="ghost" onClick={() => navigate('/')}>
+              Go Home
+            </RippleButton>
+          </div>
           <RippleButton variant="primary" onClick={handleRegenerate} disabled={!sessionId}>
             Try again
           </RippleButton>
@@ -115,7 +101,20 @@ export default function PaperResult() {
 
       <div className={styles.preview}>
         {paper.sections?.map((section) => (
-          <div key={section.title} className={styles.previewSection}>
+          <div
+            key={section.title}
+            className={styles.previewSection}
+            role="button"
+            tabIndex={0}
+            onClick={() => setActiveSection(section)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setActiveSection(section)
+              }
+            }}
+            aria-label={`View all questions in ${section.title}`}
+          >
             <h3>{section.title}</h3>
             <ol>
               {section.questions.slice(0, 3).map((q) => (
@@ -139,15 +138,22 @@ export default function PaperResult() {
       </div>
 
       <div className={styles.actions}>
-        <RippleButton variant="ghost" onClick={() => navigate('/configure')}>
-          Adjust configuration
-        </RippleButton>
+        <div className={styles.actionsLeft}>
+          <RippleButton variant="ghost" onClick={() => navigate('/configure')}>
+            Adjust configuration
+          </RippleButton>
+          <RippleButton variant="ghost" onClick={() => navigate('/')}>
+            Go Home
+          </RippleButton>
+        </div>
         <RippleButton variant="primary" onClick={handleRegenerate} disabled={!sessionId}>
           Regenerate
         </RippleButton>
       </div>
 
       <RatingWidget generationId={urlGenerationId} />
+
+      <SectionPreviewModal section={activeSection} onClose={() => setActiveSection(null)} />
     </div>
   )
 }

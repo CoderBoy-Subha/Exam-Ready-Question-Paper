@@ -18,16 +18,19 @@ afterAll(async () => {
 })
 
 describe('GET /api/stats', () => {
-  it('returns the four public stat fields as numbers', async () => {
+  it('returns the five public stat fields as numbers', async () => {
     await redisClient.del('stats:public')
 
     const res = await request(app).get('/api/stats')
 
     expect(res.status).toBe(200)
     expect(typeof res.body.visitorCount).toBe('number')
+    expect(typeof res.body.totalVisits).toBe('number')
     expect(typeof res.body.papersGenerated).toBe('number')
     expect(typeof res.body.ratingCount).toBe('number')
     expect(typeof res.body.averageRating).toBe('number')
+    // every visitor has visited at least once
+    expect(res.body.totalVisits).toBeGreaterThanOrEqual(res.body.visitorCount)
   })
 
   it('serves the second request from cache (identical payload, no new DB round trip needed)', async () => {

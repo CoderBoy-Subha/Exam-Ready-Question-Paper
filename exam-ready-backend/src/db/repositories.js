@@ -1,5 +1,10 @@
 import { query } from './pool.js'
 
+// ---------------------------------------------------------------------
+// visitors — one row per IP, upserted on each request (see
+// middleware/visitorTracking.js). Never purged automatically; see
+// DESIGN.md from the schema deliverable for the retention flag.
+// ---------------------------------------------------------------------
 export const visitorsRepo = {
   async upsert(ipAddress, userAgent) {
     const { rows } = await query(
@@ -16,6 +21,12 @@ export const visitorsRepo = {
   },
 }
 
+// ---------------------------------------------------------------------
+// sessions — the lifecycle anchor for one upload. Content itself
+// lives in Redis (cache/redisClient.js); this table only tracks
+// activity + expiry so the purge job and cleanup endpoint know what
+// to clear.
+// ---------------------------------------------------------------------
 export const sessionsRepo = {
   async create({ visitorId, ttlMinutes }) {
     const { rows } = await query(
@@ -69,7 +80,11 @@ export const sessionsRepo = {
   },
 }
 
-// generations — metadata only
+// ---------------------------------------------------------------------
+// generations — metadata only (see schema.sql's header comment: no
+// file bytes, extracted text, or generated paper text ever land
+// here — that's Redis's job).
+// ---------------------------------------------------------------------
 export const generationsRepo = {
   async create({
     sessionId,
@@ -170,7 +185,11 @@ export const generationsRepo = {
   },
 }
 
-// ratings — one per generation
+// ---------------------------------------------------------------------
+// ratings — one per generation; upserted so a re-rate edits in place
+// (matches the UNIQUE(generation_id) constraint + trg_ratings_updated_at
+// trigger in schema.sql).
+// ---------------------------------------------------------------------
 export const ratingsRepo = {
   async upsert({ generationId, score, comment, email }) {
     const { rows } = await query(
@@ -190,6 +209,7 @@ export const statsRepo = {
     const { rows } = await query(
       `SELECT
          (SELECT COUNT(*) FROM visitors) AS visitor_count,
+         (SELECT COALESCE(SUM(visit_count), 0) FROM visitors) AS total_visits,
          (SELECT COUNT(*) FROM generations WHERE status = 'completed') AS papers_generated,
          (SELECT COUNT(*) FROM ratings) AS rating_count,
          (SELECT COALESCE(ROUND(AVG(score)::numeric, 1), 0) FROM ratings) AS average_rating`,
@@ -197,6 +217,7 @@ export const statsRepo = {
     const row = rows[0]
     return {
       visitorCount: Number(row.visitor_count),
+      totalVisits: Number(row.total_visits),
       papersGenerated: Number(row.papers_generated),
       ratingCount: Number(row.rating_count),
       averageRating: Number(row.average_rating),

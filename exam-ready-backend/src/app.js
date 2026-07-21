@@ -12,7 +12,7 @@ export function createApp() {
   app.set('trust proxy', env.trustProxyHops)
 
   app.use(helmet())
-  app.use(cors({ origin: env.corsOrigin }))
+  app.use(cors({ origin: env.corsOrigin, credentials: true }))
   app.use(express.json({ limit: '200kb' }))
   app.use(visitorTracking)
 

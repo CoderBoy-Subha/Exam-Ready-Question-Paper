@@ -10,11 +10,17 @@ import {
 } from '../store/uploadSlice.js'
 import { uploadSource } from '../api/client.js'
 import RippleButton from './RippleButton.jsx'
+import Turnstile from './Turnstile.jsx'
 import styles from './UploadStep.module.css'
 
 const ACCEPTED_MATERIAL = '.pdf,.doc,.docx,image/*'
 const ACCEPTED_SYLLABUS = '.pdf,.doc,.docx,image/*,text/plain'
 const MAX_FILES = 6
+
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY
+/* Falls back to "not configured" for local dev without a real Cloudflare site key — matches the backend's TURNSTILE_DISABLED escape hatch, so a fresh checkout works without any Turnstile setup. */
+const TURNSTILE_CONFIGURED =
+  Boolean(TURNSTILE_SITE_KEY) && TURNSTILE_SITE_KEY !== 'your-turnstile-site-key-here'
 
 export default function UploadStep() {
   const dispatch = useDispatch()
@@ -22,6 +28,9 @@ export default function UploadStep() {
   const { contentSource, syllabusText, status, error } = useSelector((s) => s.upload)
   const [isDragging, setDragging] = useState(false)
   const [pendingFiles, setPendingFiles] = useState([]) // real File objects — kept out of Redux
+  const [turnstileToken, setTurnstileToken] = useState(null)
+  const [turnstileUnavailable, setTurnstileUnavailable] = useState(false)
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0)
   const inputRef = useRef(null)
 
   const chooseSource = (source) => {
@@ -49,6 +58,7 @@ export default function UploadStep() {
         contentSource,
         files: pendingFiles,
         syllabusText: contentSource === 'syllabus' ? syllabusText : undefined,
+        turnstileToken: TURNSTILE_CONFIGURED ? turnstileToken : undefined,
       })
       dispatch(
         uploadSucceeded({
@@ -59,13 +69,22 @@ export default function UploadStep() {
       navigate('/configure')
     } catch (err) {
       dispatch(uploadFailed(err.message))
+      // A token is single-use — whether this failed because of the
+      // check itself or for an unrelated reason, the token may already
+      // be spent. Force a fresh challenge before the next attempt.
+      if (TURNSTILE_CONFIGURED) {
+        setTurnstileToken(null)
+        setTurnstileResetKey((k) => k + 1)
+      }
     }
   }
 
-  const canContinue =
+  const filesReady =
     contentSource === 'syllabus'
       ? Boolean(syllabusText.trim()) || pendingFiles.length > 0
       : pendingFiles.length > 0
+  const turnstileSatisfied = !TURNSTILE_CONFIGURED || turnstileUnavailable || Boolean(turnstileToken)
+  const canContinue = filesReady && turnstileSatisfied
   const atLimit = pendingFiles.length >= MAX_FILES
 
   return (
@@ -166,6 +185,21 @@ export default function UploadStep() {
             rows={4}
           />
         </>
+      )}
+
+      {TURNSTILE_CONFIGURED && !turnstileUnavailable && (
+        <div className={styles.turnstileWrap}>
+          <Turnstile
+            key={turnstileResetKey}
+            siteKey={TURNSTILE_SITE_KEY}
+            onVerify={setTurnstileToken}
+            onExpire={() => setTurnstileToken(null)}
+            onUnavailable={() => setTurnstileUnavailable(true)}
+          />
+        </div>
+      )}
+      {TURNSTILE_CONFIGURED && turnstileUnavailable && (
+        <p className={styles.turnstileNote}>Verification unavailable right now — continuing without it.</p>
       )}
 
       {error && <p className={styles.errorText}>{error}</p>}

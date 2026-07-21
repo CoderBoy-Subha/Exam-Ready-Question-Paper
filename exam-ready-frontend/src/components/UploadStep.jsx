@@ -150,7 +150,7 @@ export default function UploadStep() {
         <p className={styles.dropText}>
           {atLimit ? `Maximum ${MAX_FILES} files reached` : 'Drop files here, or click to browse'}
         </p>
-        <p className={styles.dropHint}>PDF, Word, or image — up to {MAX_FILES} files</p>
+        <p className={styles.dropHint}>PDF, Word, or image — up to {MAX_FILES} files, within total 5 mb</p>
       </div>
 
       {pendingFiles.length > 0 && (

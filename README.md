@@ -1,7 +1,7 @@
 # Exam-Ready: AI-Powered Question Paper Generator
 
 **Program:** IBM SkillsBuild AICTE CSRBOX – Gen AI & Cloud  
-**Team Name:** NoobDevelopers  
+**Team Name:** NoobDevelopers.zip  
 **Project Date:** July 2026
 
 ---
@@ -43,7 +43,6 @@
 | :--- | :--- | :--- |
 | **Nilamesh Panda** | Team Leader & Project Coordinator | Official communication, documentation, submission portal management |
 | **Subhajit Kumbhakar** | Co-Lead & Lead Developer | Full-stack coding, IBM Watsonx.ai integration, Docker, IBM Cloud deployment |
-| **Anupam Dinda** | Developer Support & QA | Coding assistance, testing, debugging, quality assurance |
 
 ---
 
